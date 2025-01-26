@@ -7,6 +7,7 @@ import 'package:school_teacher/screens/dashboard.dart';
 import 'package:school_teacher/widgets/cust_circular_progress_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../initities/consts.dart';
+import '../navigation/home_screen.dart';
 
 class SplashScreen extends StatelessWidget {
   @override
@@ -28,7 +29,7 @@ class SplashScreen extends StatelessWidget {
 
   Widget _navigateToNextScreen(BuildContext context, bool isLoggedIn) {
     return isLoggedIn
-        ? DashboardScreen()
+        ? HomeScreen()
         : LoginScreen();
   }
 

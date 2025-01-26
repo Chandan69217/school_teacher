@@ -12,6 +12,8 @@ import '../../initities/colors.dart';
 import '../../initities/consts.dart';
 import '../../initities/handle_http_error.dart';
 
+
+
 class AttendanceScreen extends StatefulWidget {
   @override
   State<AttendanceScreen> createState() => _AttendanceScreenState();
@@ -21,6 +23,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text('Attendance'),titleSpacing: 0,foregroundColor: CustColors.white,backgroundColor: CustColors.dark_sky,),
       backgroundColor: CustColors.background,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
@@ -86,12 +89,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     return data!.isEmpty
                         ? Center(child: Text('No Data'))
                         : ListView.builder(
-                          itemCount: data.length,
-                          shrinkWrap: true,
-                          itemBuilder: (context, index) {
-                            return _attendanceCard(data:data[index]); // Pass data to card
-                          },
-                        );
+                      itemCount: data.length,
+                      shrinkWrap: true,
+                      itemBuilder: (context, index) {
+                        return attendanceCard(data:data[index]); // Pass data to card
+                      },
+                    );
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Column(
@@ -163,7 +166,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             var result = List<Map<String, dynamic>>.from(
               body['attendance'].map((e) => Map<String, dynamic>.from(e)),
             );
-            return result;
+            return result.reversed.toList();
           } else {
             return _handleError('Something went wrong !!', 'Please retry after sometime');
           }
@@ -193,7 +196,191 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 }
 
 
-class _attendanceCard extends StatelessWidget{
+
+
+
+
+// class AttendanceScreen extends StatefulWidget {
+//   @override
+//   State<AttendanceScreen> createState() => _AttendanceScreenState();
+// }
+//
+// class _AttendanceScreenState extends State<AttendanceScreen> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: CustColors.background,
+//       body: Padding(
+//         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text('Filter Date'),
+//             SizedBox(height: 10),
+//             Row(
+//               children: [
+//                 Expanded(
+//                   child: DropdownButtonFormField<String>(
+//                     decoration: InputDecoration(
+//                       border: OutlineInputBorder(
+//                         borderRadius: BorderRadius.circular(5.0),
+//                       ),
+//                       contentPadding: EdgeInsets.symmetric(horizontal: 10.0),
+//                     ),
+//                     value: 'Today', // Default value
+//                     items: ['Today', 'This Week', 'This Month']
+//                         .map((e) => DropdownMenuItem<String>(
+//                       value: e,
+//                       child: Text(e),
+//                     ))
+//                         .toList(),
+//                     onChanged: (value) {
+//                       setState(() {
+//                         // Handle the selection and filter
+//                         // You can store the selected value and use it for fetching data
+//                       });
+//                     },
+//                   ),
+//                 ),
+//                 SizedBox(width: 10.0),
+//                 ElevatedButton(
+//                   onPressed: () {
+//                     // Trigger search with the selected filter value
+//                     // You might want to re-fetch data based on selected value
+//                     setState(() {
+//                       // Update the filter or trigger a new fetch
+//                     });
+//                   },
+//                   style: ElevatedButton.styleFrom(
+//                     backgroundColor: Colors.indigoAccent,
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(5.0),
+//                     ),
+//                   ),
+//                   child: Padding(
+//                     padding: const EdgeInsets.symmetric(vertical: 11.0),
+//                     child: Icon(Icons.search, color: Colors.white),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//             SizedBox(height: 20.0),
+//             Expanded(
+//               child: FutureBuilder<List<Map<String, dynamic>>>(
+//                 future: _getAttendance(),
+//                 builder: (context, snapshot) {
+//                   if (snapshot.hasData) {
+//                     var data = snapshot.data;
+//                     return data!.isEmpty
+//                         ? Center(child: Text('No Data'))
+//                         : ListView.builder(
+//                           itemCount: data.length,
+//                           shrinkWrap: true,
+//                           itemBuilder: (context, index) {
+//                             return _attendanceCard(data:data[index]); // Pass data to card
+//                           },
+//                         );
+//                   } else if (snapshot.hasError) {
+//                     return Center(
+//                       child: Column(
+//                         mainAxisSize: MainAxisSize.min,
+//                         children: [
+//                           Icon(FontAwesomeIcons.triangleExclamation, color: Colors.red,size: 50,),
+//                           SizedBox(height: 5,),
+//                           Text('Failed to load data: ${snapshot.error}'),
+//                           ElevatedButton(
+//                             style: ElevatedButton.styleFrom(
+//                               backgroundColor: CustColors.dark_sky,
+//                               foregroundColor: Colors.white,
+//                               shape: RoundedRectangleBorder(
+//                                 borderRadius: BorderRadius.circular(5.0),
+//                               ),
+//                               padding: EdgeInsets.symmetric(
+//                                 horizontal: 20.0,
+//                                 vertical: 10.0,
+//                               ),
+//                             ),
+//                             onPressed: () {
+//                               setState(() {});
+//                             },
+//                             child: Text('Retry'),
+//                           ),
+//                         ],
+//                       ),
+//                     );
+//                   } else {
+//                     return Center(child: CustCircularProgress());
+//                   }
+//                 },
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//
+//   Future<List<Map<String, dynamic>>> _getAttendance() async {
+//     final connectionResult = await Connectivity().checkConnectivity();
+//     if (!(connectionResult.contains(ConnectivityResult.mobile) ||
+//         connectionResult.contains(ConnectivityResult.wifi) ||
+//         connectionResult.contains(ConnectivityResult.ethernet))) {
+//       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No internet connection')));
+//       return Future.error({
+//         'title': 'No connection',
+//         'desc': 'Please check your internet connectivity and try again.',
+//       });
+//     }
+//
+//     try {
+//       if (Pref.instance.containsKey(Consts.teacherToken)) {
+//         final token = Pref.instance.getString(Consts.teacherToken) ?? '';
+//         Uri uri = Uri.https(Urls.baseUrls, Urls.staffAttendanceList);
+//
+//         final response = await get(uri, headers: {
+//           Consts.authorization: 'Bearer $token',
+//           Consts.content_type: 'application/json',
+//         });
+//
+//         if (response.statusCode == 200) {
+//           final body = jsonDecode(response.body);
+//           print(body.toString());
+//
+//           if (body[Consts.status] == 'Success') {
+//             var result = List<Map<String, dynamic>>.from(
+//               body['attendance'].map((e) => Map<String, dynamic>.from(e)),
+//             );
+//             return result;
+//           } else {
+//             return _handleError('Something went wrong !!', 'Please retry after sometime');
+//           }
+//         } else {
+//           return handleHttpError(context,response);
+//         }
+//       } else {
+//         print('User Token Not Available');
+//         return _handleError('Token Missing', 'Please log in again');
+//       }
+//     } catch (exception) {
+//       print('Exception: $exception');
+//       return _handleError('Something went wrong !!', 'Please retry after sometime');
+//     }
+//   }
+//
+//   Future<List<Map<String, dynamic>>> _handleError(String title, String desc) async {
+//     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(desc)));
+//     return Future.error({
+//       'title': title,
+//       'desc': desc,
+//     });
+//   }
+//
+//
+//
+// }
+
+class attendanceCard extends StatelessWidget{
   Map<String,dynamic> data;
   DateFormat dateTimeFormat = DateFormat('dd-MMM-yyyy h:mm:s a');
   DateFormat timeFormat = DateFormat('h:mm a');
@@ -201,7 +388,7 @@ class _attendanceCard extends StatelessWidget{
   late String checkInTime;
   late String checkOutTime;
   late String totalTime;
-  _attendanceCard({required this.data}){
+  attendanceCard({required this.data}){
     attendanceDate = data['staffInTime'].toString().isEmpty?'N/A':dateTimeFormat.format(DateTime.parse(data['staffInTime']));
     checkInTime = data['staffInTime'].toString().isEmpty?'N/A':timeFormat.format(DateTime.parse(data['staffInTime']));
     checkOutTime = data['staffOutTime'].toString().isEmpty?'N/A':timeFormat.format(DateTime.parse(data['staffOutTime']));

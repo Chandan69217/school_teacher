@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:school_teacher/screens/dashboard.dart';
+import 'package:school_teacher/screens/navigation/home_screen.dart';
 import 'package:school_teacher/screens/splash/splash_screen.dart';
 import 'package:school_teacher/widgets/cust_circular_progress_indicator.dart';
 
@@ -241,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Pref.instance.setString(
             Consts.organisationCode, rawData['data']['user'][Consts.organisationCode].toString());
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          MaterialPageRoute(builder: (context) => HomeScreen()),
               (route) => false,
         );
       } else if (response.statusCode == 400) {
