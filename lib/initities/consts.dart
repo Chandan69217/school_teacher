@@ -9,4 +9,5 @@ class Consts{
   static const String authorization = 'authorization';
   static const String content_type = 'content-type';
   static const String status = 'status';
+  static const String userProfile = 'userProfile';
 }

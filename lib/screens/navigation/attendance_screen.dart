@@ -166,7 +166,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             var result = List<Map<String, dynamic>>.from(
               body['attendance'].map((e) => Map<String, dynamic>.from(e)),
             );
-            return result.reversed.toList();
+            return result;
           } else {
             return _handleError('Something went wrong !!', 'Please retry after sometime');
           }
@@ -388,16 +388,19 @@ class attendanceCard extends StatelessWidget{
   late String checkInTime;
   late String checkOutTime;
   late String totalTime;
+  late double latitude;
+  late double longitude;
   attendanceCard({required this.data}){
-    attendanceDate = data['staffInTime'].toString().isEmpty?'N/A':dateTimeFormat.format(DateTime.parse(data['staffInTime']));
-    checkInTime = data['staffInTime'].toString().isEmpty?'N/A':timeFormat.format(DateTime.parse(data['staffInTime']));
-    checkOutTime = data['staffOutTime'].toString().isEmpty?'N/A':timeFormat.format(DateTime.parse(data['staffOutTime']));
-    if(data['staffOutTime'].toString().isNotEmpty && data['staffOutTime'].toString().isNotEmpty){
-      totalTime = findTimeDifference(DateTime.parse(data['staffInTime']),DateTime.parse(data['staffOutTime']));
+    attendanceDate = data['attendanceDate'].toString().isEmpty?'N/A':data['attendanceDate'];
+    checkInTime = data['inTime'].toString().isEmpty?'N/A':data['inTime'];
+    checkOutTime = data['outTime'].toString().isEmpty?'N/A':data['outTime'];
+    if(data['inTime'].toString().isNotEmpty && data['outTime'].toString().isNotEmpty){
+      totalTime = findTimeDifference(timeFormat.parse(data['inTime']),timeFormat.parse(data['outTime']));
     }else{
       totalTime = 'N/A';
     }
   }
+
 
   String findTimeDifference(DateTime inTime, DateTime outTime) {
     Duration difference = outTime.difference(inTime);

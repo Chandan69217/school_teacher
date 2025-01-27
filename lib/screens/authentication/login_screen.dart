@@ -11,7 +11,9 @@ import 'package:school_teacher/widgets/cust_circular_progress_indicator.dart';
 
 import '../../initities/colors.dart';
 import '../../initities/consts.dart';
+import '../../initities/handle_http_error.dart';
 import '../../initities/urls.dart';
+import '../../model/teacher.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -58,25 +60,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 100,),
+                  // SizedBox(height: 100,),
                   // Logo
-                  Center(
-                    child: Container(
-                      width: 220,
-                      height: 220,
+                  Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [Container(
+                      // width: 220,
+                      // height: 220,
                       margin: EdgeInsets.only(bottom: 20),
                       child: Image.asset(
-                        'assets/icons/security-shield.webp',
+                        'assets/icons/hello_bro.webp',
                         fit: BoxFit.cover,
                       ),
                     ),
+                      Positioned(
+                        bottom: 45,
+                        child: Text('Hello !!',style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),),
+                      )
+                    ]
                   ),
-
                   // Title
                   Text(
                     'Login',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -182,6 +192,50 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> getUserDetailsFromAPI() async{
+    final connectionResult = await Connectivity().checkConnectivity();
+    if (!(connectionResult.contains(ConnectivityResult.mobile) ||
+        connectionResult.contains(ConnectivityResult.wifi) ||
+        connectionResult.contains(ConnectivityResult.ethernet))) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('No internet connection')));
+      return Future.error({
+        'title': 'No connection',
+        'desc': 'Please check your internet connectivity and try again.',
+      });
+    }
+
+    try {
+      if (Pref.instance.containsKey(Consts.teacherToken)) {
+        final token = Pref.instance.getString(Consts.teacherToken) ?? '';
+        Uri uri = Uri.https(Urls.baseUrls, Urls.staffProfile);
+
+        final response = await get(uri,headers: {
+          Consts.authorization: 'Bearer $token',
+          Consts.content_type: 'application/json',
+        });
+
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          if (body[Consts.status] == 'Success') {
+            var body = json.decode(response.body);
+            print(body['profile'][0].toString());
+            setState(() {
+              Pref.instance.setString(Consts.userProfile, jsonEncode(body['profile'][0]));
+              Teacher.fromJson(body['profile'][0] as Map<String,dynamic>);
+            });
+          } else {
+            print(
+                'Something went wrong !! Please retry after sometime');
+          }
+        }else {
+          handleHttpError(context, response);
+        }
+      }
+    } catch (exception) {
+      print('Exception: $exception');
+    }
+  }
   void _login() async {
     final String mobileTxt = _mobileTxtController.text.trim();
     final String passwordTxt = _passwordTextController.text.trim();
@@ -235,6 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Pref.instance.setBool(Consts.isLogin, true);
         Pref.instance.setString(
             Consts.teacherToken, rawData['data']['user'][Consts.teacherToken]);
+        getUserDetailsFromAPI();
         Pref.instance.setString(
             Consts.organisationId, rawData['data']['user'][Consts.organisationId].toString());
         Pref.instance.setString(

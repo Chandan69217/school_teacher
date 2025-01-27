@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:http/http.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:school_teacher/initities/permission_handler.dart';
+import 'package:school_teacher/model/teacher.dart';
 import 'package:school_teacher/screens/splash/splash_screen.dart';
 import '../../initities/colors.dart';
 import '../../initities/consts.dart';
@@ -68,9 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
           var body = json.encode({
             "latitude": position.latitude.toString(),
             "longitude": position.longitude.toString(),
-            "staffInTime": dateFormat1.format(DateTime.now()),
-            "staffOutTime": dateFormat1.format(DateTime.now()),
-            "staffStatus": _switchValue ? 'IN' : 'OUT'
+            "attendanceTime": dateFormat1.format(DateTime.now()),
+            "staffStatus": !_switchValue ? 'IN' : 'OUT'
           });
 
           final response = await post(uri, body: body, headers: {
@@ -84,19 +83,20 @@ class _HomeScreenState extends State<HomeScreen> {
             if (body[Consts.status] == 'success') {
               setState(() {
                 _punchBtnLoading = false;
+                _switchValue = value ?? false;
               });
               showDialog(
                   dialogType: DialogType.success,
                   title: 'Success',
                   desc:
-                      '${_switchValue ? 'Punch Out' : 'Punch In'} successfully');
-              inTime =
-                  dateFormat.format(DateTime.parse(body['response']['inTime']));
-              outTime = dateFormat
-                  .format(DateTime.parse(body['response']['outTime']));
-              setState(() {
-                _switchValue = value ?? false;
-              });
+                      '${!_switchValue ? 'Punch Out' : 'Punch In'} successfully');
+              if(body['response']['status'].toString().toLowerCase() == 'in'){
+                inTime =
+                    dateFormat.format(DateTime.parse(body['response']['staffAttendanceTime']));
+              }else{
+                outTime = dateFormat
+                    .format(DateTime.parse(body['response']['staffAttendanceTime']));
+              }
             } else {
               setState(() {
                 _punchBtnLoading = false;
@@ -166,6 +166,71 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    getUserDetailsFromAPI();
+  }
+
+  Future<void> getUserDetailsFromAPI() async{
+    final connectionResult = await Connectivity().checkConnectivity();
+    if (!(connectionResult.contains(ConnectivityResult.mobile) ||
+        connectionResult.contains(ConnectivityResult.wifi) ||
+        connectionResult.contains(ConnectivityResult.ethernet))) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('No internet connection')));
+      return Future.error({
+        'title': 'No connection',
+        'desc': 'Please check your internet connectivity and try again.',
+      });
+    }
+
+    try {
+      if (Pref.instance.containsKey(Consts.teacherToken)) {
+        final token = Pref.instance.getString(Consts.teacherToken) ?? '';
+        Uri uri = Uri.https(Urls.baseUrls, Urls.staffProfile);
+        
+        final response = await get(uri,headers: {
+          Consts.authorization: 'Bearer $token',
+          Consts.content_type: 'application/json',
+        });
+
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          if (body[Consts.status] == 'Success') {
+            var body = json.decode(response.body);
+            print(body['profile'][0].toString());
+            setState(() {
+              Pref.instance.setString(Consts.userProfile, jsonEncode(body['profile'][0]));
+              Teacher.fromJson(body['profile'][0] as Map<String,dynamic>);
+            });
+          } else {
+             _handleError(
+                'Something went wrong !!', 'Please retry after sometime');
+          }
+        }else {
+          handleHttpError(context, response);
+        }
+      } else {
+        print('User Token Not Available');
+        _handleError('Token Missing', 'Please log in again');
+      }
+    } catch (exception) {
+      print('Exception: $exception');
+      _handleError(
+          'Something went wrong !!', 'Please retry after sometime');
+    }
+  }
+
+  Future<bool> _getUserDetailsFromCached() async{
+    if(Pref.instance.containsKey(Consts.userProfile)){
+      Teacher.fromJson(json.decode(Pref.instance.getString(Consts.userProfile)!) as Map<String,dynamic>);
+      return true;
+    }else{
+      return false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -181,193 +246,247 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(Icons.menu, color: CustColors.white))),
       ),
       backgroundColor: CustColors.background,
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Profile Card
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF00b894),
-                  Color(0xFF008f99),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                    color: CustColors.grey, blurRadius: 4, offset: Offset(0, 2))
-              ],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(
-                          'https://storage.googleapis.com/a1aa/image/X4g9mngEvb46AdEvMyivVsXH5YVtIIoHveo4bu2qx3p73GEKA.jpg'),
-                      radius: 30,
+      body: FutureBuilder(future: _getUserDetailsFromCached(),
+          builder:(context,snapshot){
+        if(snapshot.hasData){
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Profile Card
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF00b894),
+                        Color(0xFF008f99),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    boxShadow: [
+                      BoxShadow(
+                          color: CustColors.grey, blurRadius: 4, offset: Offset(0, 2))
+                    ],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text('PRABHAT RAJ',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                          Text('Web Developer',
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.white)),
+                          CircleAvatar(
+                            backgroundImage: NetworkImage(Teacher.teacherImage),
+                            radius: 30,
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white)),
+                                Text(Teacher.teacherDepartment.isEmpty?'N/A':Teacher.teacherDepartment,
+                                    style:
+                                    TextStyle(fontSize: 12, color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                        ],
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 5),
+                              Text('Shift: ${Teacher.teacherType}',
+                                  style:
+                                  TextStyle(fontSize: 14, color: Colors.white)),
+                              Text('In: $inTime',
+                                  style:
+                                  TextStyle(fontSize: 14, color: Colors.white)),
+                              Text('Out: $outTime',
+                                  style:
+                                  TextStyle(fontSize: 14, color: Colors.white)),
+                            ],
+                          ),
+                          Spacer(),
+                          if (_punchBtnLoading)
+                            Expanded(
+                                child: Center(
+                                    child: CustCircularProgress(
+                                      color: Colors.white,
+                                    )))
+                          else
+                            FlutterSwitch(
+                              width: 120.0,
+                              height: 40,
+                              //value: lastStatus == 'IN' ? true:false,
+                              borderRadius: 30.0,
+                              showOnOff: true,
+                              activeTextColor: CustColors.white,
+                              inactiveTextColor: CustColors.white,
+                              padding: 8.0,
+                              activeText: 'Out',
+                              inactiveText: 'In',
+                              inactiveColor: Colors.green,
+                              activeColor: Colors.red,
+                              activeTextFontWeight: FontWeight.normal,
+                              inactiveTextFontWeight: FontWeight.normal,
+                              valueFontSize: 18.0,
+                              activeIcon: Icon(Icons.arrow_back_rounded),
+                              inactiveIcon: Icon(Icons.arrow_forward_rounded),
+                              onToggle: _markAttendance, value: _switchValue,
+                            ),
                         ],
                       ),
-                    ),
-                  ],
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                    ],
+                  ),
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 5),
-                        Text('Shift: GENERAL',
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                        Text('In: $inTime',
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                        Text('Out: $outTime',
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                      ],
-                    ),
-                    Spacer(),
-                    if (_punchBtnLoading)
-                      Expanded(
-                          child: Center(
-                              child: CustCircularProgress(
-                        color: Colors.white,
-                      )))
-                    else
-                      FlutterSwitch(
-                        width: 120.0,
-                        height: 40,
-                        //value: lastStatus == 'IN' ? true:false,
-                        borderRadius: 30.0,
-                        showOnOff: true,
-                        activeTextColor: CustColors.white,
-                        inactiveTextColor: CustColors.white,
-                        padding: 8.0,
-                        activeText: 'Out',
-                        inactiveText: 'In',
-                        inactiveColor: Colors.green,
-                        activeColor: Colors.red,
-                        activeTextFontWeight: FontWeight.normal,
-                        inactiveTextFontWeight: FontWeight.normal,
-                        valueFontSize: 18.0,
-                        activeIcon: Icon(Icons.arrow_back_rounded),
-                        inactiveIcon: Icon(Icons.arrow_forward_rounded),
-                        onToggle: _markAttendance, value: _switchValue,
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+              ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10.0),
-            child: Text('Recent Activity',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: CustColors.dark_grey)),
-          ),
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _getAttendance(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  var data = snapshot.data;
-                  return data!.isEmpty
-                      ? Center(child: Text('No Data'))
-                      : Column(
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10.0),
+                child: Text('Recent Activity',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: CustColors.dark_grey)),
+              ),
+
+              // Attendance list
+              Expanded(
+                flex: 4,
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _getAttendance(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      var data = snapshot.data;
+                      if (data!.isEmpty) {
+                        return Center(child: Text('No Data'));
+                      } else {
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            ListView.builder(
-                              itemCount: data.length > 10 ? 11: data.length,
-                              shrinkWrap: true,
-                              itemBuilder: (context, index) {
-                                if (index == 10) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16.0),
-                                    child: ElevatedButton(
-                                      onPressed: () {Navigator.of(context).push(MaterialPageRoute(builder: (context)=> AttendanceScreen()));},
-                                      style: ElevatedButton.styleFrom(backgroundColor: CustColors.dark_sky,foregroundColor: CustColors.white),
-                                      child: Text('See More'),
-                                    ),
-                                  );
-                                } else
-                                  return attendanceCard(data: data[index]); // Pass data to card
-                              },
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: data.length > 10 ? 11: data.length,
+                                shrinkWrap: true,
+                                itemBuilder: (context, index) {
+                                  if (index == 10) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16.0),
+                                      child: ElevatedButton(
+                                        onPressed: () {Navigator.of(context).push(MaterialPageRoute(builder: (context)=> AttendanceScreen()));},
+                                        style: ElevatedButton.styleFrom(backgroundColor: CustColors.dark_sky,foregroundColor: CustColors.white),
+                                        child: Text('See More'),
+                                      ),
+                                    );
+                                  } else
+                                    return attendanceCard(data: data[index]); // Pass data to card
+                                },
+                              ),
                             ),
                           ],
                         );
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          FontAwesomeIcons.triangleExclamation,
-                          color: Colors.red,
-                          size: 50,
-                        ),
-                        SizedBox(
-                          height: 5,
-                        ),
-                        Text(
-                          'Failed to load data\n ${snapshot.error}',
-                          textAlign: TextAlign.center,
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: CustColors.dark_sky,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5.0),
+                      }
+                    } else if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              FontAwesomeIcons.triangleExclamation,
+                              color: Colors.red,
+                              size: 50,
                             ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20.0,
-                              vertical: 10.0,
+                            SizedBox(
+                              height: 5,
                             ),
-                          ),
-                          onPressed: () {
-                            setState(() {});
-                          },
-                          child: Text('Retry'),
+                            Text(
+                              'Failed to load data\n ${snapshot.error}',
+                              textAlign: TextAlign.center,
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: CustColors.dark_sky,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(5.0),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20.0,
+                                  vertical: 10.0,
+                                ),
+                              ),
+                              onPressed: () {
+                                setState(() {});
+                              },
+                              child: Text('Retry'),
+                            ),
+                          ],
                         ),
-                      ],
+                      );
+                    } else {
+                      return Center(child: CustCircularProgress());
+                    }
+                  },
+                ),
+              ),
+            ]),
+          );
+        }else if(snapshot.hasError){
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  FontAwesomeIcons.triangleExclamation,
+                  color: Colors.red,
+                  size: 50,
+                ),
+                SizedBox(
+                  height: 5,
+                ),
+                Text(
+                  'Failed to load data\n ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CustColors.dark_sky,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5.0),
                     ),
-                  );
-                } else {
-                  return Center(child: CustCircularProgress());
-                }
-              },
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 10.0,
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {});
+                  },
+                  child: Text('Retry'),
+                ),
+              ],
             ),
-          ),
-        ]),
-      ),
+          );
+        }else{
+          return Center(child: CustCircularProgress());
+        }
+          }),
       drawer: _drawerUI()
     );
   }
@@ -403,7 +522,7 @@ class _HomeScreenState extends State<HomeScreen> {
             var result = List<Map<String, dynamic>>.from(
               body['attendance'].map((e) => Map<String, dynamic>.from(e)),
             );
-            return result.reversed.toList();
+            return result;
           } else {
             return _handleError(
                 'Something went wrong !!', 'Please retry after sometime');
@@ -460,6 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       title: title,
       desc: desc,
+      descTextStyle: TextStyle(fontSize: 12),
       dialogType: dialogType,
       btnOkOnPress: () {},
       dismissOnBackKeyPress: false,
@@ -497,13 +617,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: CircleAvatar(
                               radius: 70.0,
                               backgroundImage: NetworkImage(
-                                'https://storage.googleapis.com/a1aa/image/lbnwHobqtCaxONelBvZmW9NlAveeDeb5fMlWmeA4O8N0tdDCF.jpg',
+                                Teacher.teacherImage
                               ),
                             )
                           ),
                           SizedBox(height: 5.0),
                           Text(
-                            'PRABHAT RAJ',
+                            Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
                             style: TextStyle(
                               fontSize: 20.0,
                               color: CustColors.white,
@@ -511,7 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           Text(
-                            'Emp. ID: DPINT10030',
+                            Teacher.teacherMobileNumber.isEmpty?'N/A':'+91 ${Teacher.teacherMobileNumber}',
                             style: TextStyle(color: CustColors.background,fontSize: 14),
                           ),
                           SizedBox(height: 8.0,),
@@ -520,8 +640,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: ElevatedButton(
                               onPressed: () {},
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: CustColors.white,
+                                // backgroundColor: Colors.blue,
+                                backgroundColor: Color(0XFFD3D3D3),
+                                foregroundColor: CustColors.black,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(5.0),
                                 ),
@@ -555,18 +676,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildInfoRow('Employee ID', 'DPINT10030'),
-                            _buildInfoRow('Designation', 'Web Developer'),
-                            _buildInfoRow('Employee Type', 'Intern'),
-                            _buildInfoRow('Department', 'MANAGEMENT'),
-                            _buildInfoRow('Gender', 'Male'),
+                            _buildInfoRow('Teacher ID', '${Teacher.teacherId}'),
+                            _buildInfoRow('Designation', '${Teacher.teacherDesignation}'),
+                            _buildInfoRow('Teacher Type', '${Teacher.teacherType}'),
+                            _buildInfoRow('Department', '${Teacher.teacherDepartment}'),
+                            _buildInfoRow('Gender', '${Teacher.teacherGender}'),
                           ],
                         ),
                       ),
-                      SizedBox(height: 10,),
+                      const SizedBox(height: 5,),
                       SizedBox(
-                        width: MediaQuery.of(context).size.width*0.5,
-                        child: ElevatedButton(
+                        width: MediaQuery.of(context).size.width*0.6,
+                        child: TextButton.icon(
+                          icon: Icon(Icons.logout),
                           onPressed: () {
                             // Pref.instance.clear();
                             Pref.instance.remove(Consts.isLogin);
@@ -574,20 +696,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             Pref.instance.remove(Consts.organisationId);
                             Pref.instance.remove(Consts.organisationCode);
                             Pref.instance.remove(Consts.teacherCode);
+                            Pref.instance.remove(Consts.userProfile);
                             Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context)=>LoginScreen()), (route) => false,);
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5.0),
-                            ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
                             padding: EdgeInsets.symmetric(
                               horizontal: 20.0,
                               vertical: 10.0,
                             ),
                           ),
-                          child: Text('Logout'),
+                          label: const Text('Logout'),
                         ),
                       ),
                     ],
@@ -599,6 +718,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
+
+
 
 // class HomeScreen extends StatefulWidget {
 //   @override
