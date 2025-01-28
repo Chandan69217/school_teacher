@@ -224,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _getUserDetailsFromCached() async{
     if(Pref.instance.containsKey(Consts.userProfile)){
       Teacher.fromJson(json.decode(Pref.instance.getString(Consts.userProfile)!) as Map<String,dynamic>);
+      _checkLastStatus();
       return true;
     }else{
       return false;
@@ -278,8 +279,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundImage: NetworkImage(Teacher.teacherImage),
                             radius: 30,
+                            backgroundColor:  Colors.transparent,
+                            child: ClipOval(
+                              child: SizedBox.expand(
+                                child: FadeInImage.assetNetwork(
+                                  placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
+                                  image: Teacher.teacherImage,
+                                  fit: BoxFit.cover,
+                                  imageErrorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      'assets/icons/dummy-profile-image.webp', // Your fallback asset image
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
                           ),
                           SizedBox(width: 10),
                           Expanded(
@@ -298,7 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ],
-                        crossAxisAlignment: CrossAxisAlignment.start,
                       ),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -589,104 +604,113 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _drawerUI() {
-    return  Drawer(
+    return Drawer(
+      backgroundColor: CustColors.dark_sky,
       child: Column(
         children: [
           Expanded(
             flex: 1,
             child: Container(
-              padding:  EdgeInsets.symmetric(horizontal: 20.0,vertical: 25),
+              padding: EdgeInsets.symmetric(horizontal: 20.0),
               decoration: BoxDecoration(
                 color: CustColors.dark_sky,
-                //  borderRadius: BorderRadius.only(bottomRight: Radius.circular(20.0),bottomLeft: Radius.circular(20.0))
               ),
               child: SingleChildScrollView(
-                physics: NeverScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: Column(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
+                child: SafeArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width,
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                              border: Border.all(width: 2,color: CustColors.white)
-                            ),
-                            child: CircleAvatar(
-                              radius: 70.0,
-                              backgroundImage: NetworkImage(
-                                Teacher.teacherImage
+                                border: Border.all(width: 2, color: CustColors.white),
                               ),
-                            )
-                          ),
-                          SizedBox(height: 5.0),
-                          Text(
-                            Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
-                            style: TextStyle(
-                              fontSize: 20.0,
-                              color: CustColors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            Teacher.teacherMobileNumber.isEmpty?'N/A':'+91 ${Teacher.teacherMobileNumber}',
-                            style: TextStyle(color: CustColors.background,fontSize: 14),
-                          ),
-                          SizedBox(height: 8.0,),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.7,
-                            child: ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                // backgroundColor: Colors.blue,
-                                backgroundColor: Color(0XFFD3D3D3),
-                                foregroundColor: CustColors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                ),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 20.0,
-                                  vertical: 10.0,
+                              child: CircleAvatar(
+                                radius: 70,
+                                backgroundColor: Colors.transparent,
+                                child: ClipOval(
+                                  child: SizedBox.expand(
+                                    child: FadeInImage.assetNetwork(
+                                      placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
+                                      image: Teacher.teacherImage,
+                                      fit: BoxFit.cover,
+                                      imageErrorBuilder: (context, error, stackTrace) {
+                                        return Image.asset(
+                                          'assets/icons/dummy-profile-image.webp', // Your fallback asset image
+                                          fit: BoxFit.cover,
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: Text('Change Password'),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 5.0),
+                            Text(
+                              Teacher.teacherName.isEmpty ? 'N/A' : Teacher.teacherName,
+                              style: TextStyle(
+                                fontSize: 20.0,
+                                color: CustColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              Teacher.teacherMobileNumber.isEmpty ? 'N/A' : '+91 ${Teacher.teacherMobileNumber}',
+                              style: TextStyle(color: CustColors.background, fontSize: 14),
+                            ),
+                            SizedBox(height: 8.0),
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.7,
+                              child: ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0XFFD3D3D3),
+                                  foregroundColor: CustColors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                  ),
+                                  padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                                ),
+                                child: Text('Change Password'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+          // Aligning logout button and version text at the bottom
           Expanded(
-              flex: 2,
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 0.0,horizontal: 10.0),
-                decoration: BoxDecoration(color: CustColors.background),
-                child: SingleChildScrollView(
-                  child: Column(
+            flex: 2,
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
+              decoration: BoxDecoration(color: CustColors.background),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Pushes content to top and bottom
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 20,),
-                      Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoRow('Teacher ID', '${Teacher.teacherId}'),
-                            _buildInfoRow('Designation', '${Teacher.teacherDesignation}'),
-                            _buildInfoRow('Teacher Type', '${Teacher.teacherType}'),
-                            _buildInfoRow('Department', '${Teacher.teacherDepartment}'),
-                            _buildInfoRow('Gender', '${Teacher.teacherGender}'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 5,),
+                      _buildInfoRow('Teacher ID', '${Teacher.teacherId}'),
+                      _buildInfoRow('Email ID', '${Teacher.teacherEmailId}'),
+                      _buildInfoRow('Designation', '${Teacher.teacherDesignation}'),
+                      _buildInfoRow('Teacher Type', '${Teacher.teacherType}'),
+                      _buildInfoRow('Department', '${Teacher.teacherDepartment}'),
+                      _buildInfoRow('Gender', '${Teacher.teacherGender}'),
+                    ],
+                  ),
+                  Column(
+                    children: [
                       SizedBox(
-                        width: MediaQuery.of(context).size.width*0.6,
+                        width: MediaQuery.of(context).size.width * 0.6,
                         child: TextButton.icon(
                           icon: Icon(Icons.logout),
                           onPressed: () {
@@ -697,26 +721,85 @@ class _HomeScreenState extends State<HomeScreen> {
                             Pref.instance.remove(Consts.organisationCode);
                             Pref.instance.remove(Consts.teacherCode);
                             Pref.instance.remove(Consts.userProfile);
-                            Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context)=>LoginScreen()), (route) => false,);
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (context) => LoginScreen()),
+                                  (route) => false,
+                            );
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.red,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20.0,
-                              vertical: 10.0,
-                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                           ),
                           label: const Text('Logout'),
                         ),
                       ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Version 1.01.321',
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(color: CustColors.grey),
+                      ),
                     ],
                   ),
-                ),
-              ))
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  void _checkLastStatus() async{
+    final connectionResult = await Connectivity().checkConnectivity();
+    if (!(connectionResult.contains(ConnectivityResult.mobile) ||
+        connectionResult.contains(ConnectivityResult.wifi) ||
+        connectionResult.contains(ConnectivityResult.ethernet))) {
+      return;
+    }
+
+    try {
+      if (Pref.instance.containsKey(Consts.teacherToken)) {
+        final token = Pref.instance.getString(Consts.teacherToken) ?? '';
+        Uri uri = Uri.https(Urls.baseUrls, Urls.staffAttendanceList);
+
+        final response = await get(uri,headers: {
+          Consts.authorization: 'Bearer $token',
+          Consts.content_type: 'application/json',
+        });
+
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          if (body[Consts.status] == 'Success') {
+            var body = json.decode(response.body);
+            print(body['response'].toString());
+            var status = body['response']['status'].toString().toUpperCase();
+            var timeStamp = dateFormat.format(body['response']['timestamp']);
+            setState(() {
+              if(status == 'IN'){
+                inTime = timeStamp;
+                _switchValue = true;
+              }else{
+                outTime = timeStamp;
+                _switchValue = false;
+              }
+            });
+          } else {
+            print('Something went wrong !! with status code : ${response.statusCode}');
+            return;
+          }
+        }else {
+          print('Something went wrong !! with status code : ${response.statusCode}');
+          return;
+        }
+      } else {
+        print('User Token Not Available');
+        return;
+      }
+    } catch (exception) {
+      print('Exception: $exception');
+    }
+  }
+
 }
 
 
