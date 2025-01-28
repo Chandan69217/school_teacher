@@ -30,7 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _switchValue = false;
   String inTime = 'N/A';
   String outTime = 'N/A';
-  DateFormat dateFormat = DateFormat('dd-MMM-yyyy h:mm:ss a');
+  DateFormat dateFormat = DateFormat('dd-MMM-yyyy h:mm a');
+  DateFormat inputFormat = DateFormat("dd/MM/yyyy hh:mm a");
   DateFormat dateFormat1 = DateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
 
@@ -169,6 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     getUserDetailsFromAPI();
+    _checkLastStatus();
   }
 
   Future<void> getUserDetailsFromAPI() async{
@@ -224,7 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _getUserDetailsFromCached() async{
     if(Pref.instance.containsKey(Consts.userProfile)){
       Teacher.fromJson(json.decode(Pref.instance.getString(Consts.userProfile)!) as Map<String,dynamic>);
-      _checkLastStatus();
       return true;
     }else{
       return false;
@@ -760,7 +761,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (Pref.instance.containsKey(Consts.teacherToken)) {
         final token = Pref.instance.getString(Consts.teacherToken) ?? '';
-        Uri uri = Uri.https(Urls.baseUrls, Urls.staffAttendanceList);
+        Uri uri = Uri.https(Urls.baseUrls, Urls.lastAttendanceStatus);
 
         final response = await get(uri,headers: {
           Consts.authorization: 'Bearer $token',
@@ -770,17 +771,23 @@ class _HomeScreenState extends State<HomeScreen> {
         if (response.statusCode == 200) {
           final body = jsonDecode(response.body);
           if (body[Consts.status] == 'Success') {
-            var body = json.decode(response.body);
-            print(body['response'].toString());
-            var status = body['response']['status'].toString().toUpperCase();
-            var timeStamp = dateFormat.format(body['response']['timestamp']);
+            var body = json.decode(response.body) as Map<String,dynamic>;
+            var status = body['data']['lastStatus'].toString().toUpperCase();
+            var date = body['data']['attendanceDate'].toString();
+            var punchInTime = body['data']['inTime'].toString();
+            var punchOutTime = body['data']['outTime'].toString();
             setState(() {
               if(status == 'IN'){
-                inTime = timeStamp;
                 _switchValue = true;
-              }else{
-                outTime = timeStamp;
+              }
+              else{
                 _switchValue = false;
+              }
+              if(punchInTime.isNotEmpty){
+                inTime = dateFormat.format(inputFormat.parse('$date $punchInTime'));
+              }
+              if(punchOutTime.isNotEmpty){
+                outTime = dateFormat.format(inputFormat.parse('$date $punchOutTime'));
               }
             });
           } else {
