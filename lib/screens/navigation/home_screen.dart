@@ -255,117 +255,118 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Profile Card
-              Expanded(
-                flex: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF00b894),
-                        Color(0xFF008f99),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                          color: CustColors.grey, blurRadius: 4, offset: Offset(0, 2))
+              Container(
+                constraints: BoxConstraints(
+                  minHeight: 100.0,
+                  maxHeight: 150.0
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF00b894),
+                      Color(0xFF008f99),
                     ],
-                    borderRadius: BorderRadius.circular(10),
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor:  Colors.transparent,
-                            child: ClipOval(
-                              child: SizedBox.expand(
-                                child: FadeInImage.assetNetwork(
-                                  placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
-                                  image: Teacher.teacherImage,
-                                  fit: BoxFit.cover,
-                                  imageErrorBuilder: (context, error, stackTrace) {
-                                    return Image.asset(
-                                      'assets/icons/dummy-profile-image.webp', // Your fallback asset image
-                                      fit: BoxFit.cover,
-                                    );
-                                  },
-                                ),
+                  boxShadow: [
+                    BoxShadow(
+                        color: CustColors.grey, blurRadius: 4, offset: Offset(0, 2))
+                  ],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor:  Colors.transparent,
+                          child: ClipOval(
+                            child: SizedBox.expand(
+                              child: FadeInImage.assetNetwork(
+                                placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
+                                image: Teacher.teacherImage,
+                                fit: BoxFit.cover,
+                                imageErrorBuilder: (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/icons/dummy-profile-image.webp', // Your fallback asset image
+                                    fit: BoxFit.cover,
+                                  );
+                                },
                               ),
                             ),
                           ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white)),
-                                Text(Teacher.teacherDepartment.isEmpty?'N/A':Teacher.teacherDepartment,
-                                    style:
-                                    TextStyle(fontSize: 12, color: Colors.white)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Column(
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(height: 5),
-                              Text('Shift: ${Teacher.teacherType}',
+                              Text(Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white)),
+                              Text(Teacher.teacherDepartment.isEmpty?'N/A':Teacher.teacherDepartment,
                                   style:
-                                  TextStyle(fontSize: 14, color: Colors.white)),
-                              Text('In: $inTime',
-                                  style:
-                                  TextStyle(fontSize: 14, color: Colors.white)),
-                              Text('Out: $outTime',
-                                  style:
-                                  TextStyle(fontSize: 14, color: Colors.white)),
+                                  TextStyle(fontSize: 12, color: Colors.white)),
                             ],
                           ),
-                          Spacer(),
-                          if (_punchBtnLoading)
-                            Expanded(
-                                child: Center(
-                                    child: CustCircularProgress(
-                                      color: Colors.white,
-                                    )))
-                          else
-                            FlutterSwitch(
-                              width: 120.0,
-                              height: 40,
-                              //value: lastStatus == 'IN' ? true:false,
-                              borderRadius: 30.0,
-                              showOnOff: true,
-                              activeTextColor: CustColors.white,
-                              inactiveTextColor: CustColors.white,
-                              padding: 8.0,
-                              activeText: 'Out',
-                              inactiveText: 'In',
-                              inactiveColor: Colors.green,
-                              activeColor: Colors.red,
-                              activeTextFontWeight: FontWeight.normal,
-                              inactiveTextFontWeight: FontWeight.normal,
-                              valueFontSize: 18.0,
-                              activeIcon: Icon(Icons.arrow_back_rounded),
-                              inactiveIcon: Icon(Icons.arrow_forward_rounded),
-                              onToggle: _markAttendance, value: _switchValue,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 5),
+                            Text('Shift: ${Teacher.teacherType}',
+                                style:
+                                TextStyle(fontSize: 14, color: Colors.white)),
+                            Text('In: $inTime',
+                                style:
+                                TextStyle(fontSize: 14, color: Colors.white)),
+                            Text('Out: $outTime',
+                                style:
+                                TextStyle(fontSize: 14, color: Colors.white)),
+                          ],
+                        ),
+                        Spacer(),
+                        if (_punchBtnLoading)
+                          Expanded(
+                              child: Center(
+                                  child: CustCircularProgress(
+                                    color: Colors.white,
+                                  )))
+                        else
+                          FlutterSwitch(
+                            width: 120.0,
+                            height: 40,
+                            //value: lastStatus == 'IN' ? true:false,
+                            borderRadius: 30.0,
+                            showOnOff: true,
+                            activeTextColor: CustColors.white,
+                            inactiveTextColor: CustColors.white,
+                            padding: 8.0,
+                            activeText: 'Out',
+                            inactiveText: 'In',
+                            inactiveColor: Colors.green,
+                            activeColor: Colors.red,
+                            activeTextFontWeight: FontWeight.normal,
+                            inactiveTextFontWeight: FontWeight.normal,
+                            valueFontSize: 18.0,
+                            activeIcon: Icon(Icons.arrow_back_rounded),
+                            inactiveIcon: Icon(Icons.arrow_forward_rounded),
+                            onToggle: _markAttendance, value: _switchValue,
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
 
@@ -616,74 +617,72 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: CustColors.dark_sky,
               ),
-              child: SingleChildScrollView(
-                child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        child: Column(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(width: 2, color: CustColors.white),
-                              ),
-                              child: CircleAvatar(
-                                radius: 70,
-                                backgroundColor: Colors.transparent,
-                                child: ClipOval(
-                                  child: SizedBox.expand(
-                                    child: FadeInImage.assetNetwork(
-                                      placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
-                                      image: Teacher.teacherImage,
-                                      fit: BoxFit.cover,
-                                      imageErrorBuilder: (context, error, stackTrace) {
-                                        return Image.asset(
-                                          'assets/icons/dummy-profile-image.webp', // Your fallback asset image
-                                          fit: BoxFit.cover,
-                                        );
-                                      },
-                                    ),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(width: 2, color: CustColors.white),
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.transparent,
+                              child: ClipOval(
+                                child: SizedBox.expand(
+                                  child: FadeInImage.assetNetwork(
+                                    placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
+                                    image: Teacher.teacherImage,
+                                    fit: BoxFit.cover,
+                                    imageErrorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/dummy-profile-image.webp', // Your fallback asset image
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
                             ),
-                            SizedBox(height: 5.0),
-                            Text(
-                              Teacher.teacherName.isEmpty ? 'N/A' : Teacher.teacherName,
-                              style: TextStyle(
-                                fontSize: 20.0,
-                                color: CustColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          ),
+                          SizedBox(height: 5.0),
+                          Text(
+                            Teacher.teacherName.isEmpty ? 'N/A' : Teacher.teacherName,
+                            style: TextStyle(
+                              fontSize: 20.0,
+                              color: CustColors.white,
+                              fontWeight: FontWeight.bold,
                             ),
-                            Text(
-                              Teacher.teacherMobileNumber.isEmpty ? 'N/A' : '+91 ${Teacher.teacherMobileNumber}',
-                              style: TextStyle(color: CustColors.background, fontSize: 14),
-                            ),
-                            SizedBox(height: 8.0),
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0XFFD3D3D3),
-                                  foregroundColor: CustColors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5.0),
-                                  ),
-                                  padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                                ),
-                                child: Text('Change Password'),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          Text(
+                            Teacher.teacherMobileNumber.isEmpty ? 'N/A' : '+91 ${Teacher.teacherMobileNumber}',
+                            style: TextStyle(color: CustColors.background, fontSize: 14),
+                          ),
+                          SizedBox(height: 8.0),
+                          // SizedBox(
+                          //   width: MediaQuery.of(context).size.width * 0.7,
+                          //   child: ElevatedButton(
+                          //     onPressed: () {},
+                          //     style: ElevatedButton.styleFrom(
+                          //       backgroundColor: Color(0XFFD3D3D3),
+                          //       foregroundColor: CustColors.black,
+                          //       shape: RoundedRectangleBorder(
+                          //         borderRadius: BorderRadius.circular(5.0),
+                          //       ),
+                          //       padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                          //     ),
+                          //     child: Text('Change Password'),
+                          //   ),
+                          // ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -708,8 +707,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildInfoRow('Gender', '${Teacher.teacherGender}'),
                     ],
                   ),
+
                   Column(
                     children: [
+                      // SizedBox(height: 70,),
                       SizedBox(
                         width: MediaQuery.of(context).size.width * 0.6,
                         child: TextButton.icon(

@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:school_teacher/initities/read_device_data.dart';
 import 'package:school_teacher/screens/dashboard.dart';
 import 'package:school_teacher/screens/navigation/home_screen.dart';
 import 'package:school_teacher/screens/splash/splash_screen.dart';
@@ -28,6 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordTextController = TextEditingController();
   bool _isLoading = false;
   bool isChecked = false;
+  Map<String, dynamic> _deviceData = <String, dynamic>{};
+  static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
 
   @override
   void initState() {
@@ -36,6 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   init()async{
+
+    if(Platform.isAndroid){
+      _deviceData = readAndroidBuildData(await deviceInfoPlugin.androidInfo);
+    }else if(Platform.isIOS){
+      _deviceData = readIosDeviceInfo(await deviceInfoPlugin.iosInfo);
+    }
     if(Pref.instance.containsKey('remember_me')){
       List<String> values = Pref.instance.getStringList('remember_me')??[];
       if(values.isNotEmpty){
@@ -44,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordTextController.text = values[1];
       }
     }
+    print(_deviceData.toString());
   }
 
   @override
@@ -159,7 +172,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 20),
 
                   // Login Button
-                  SizedBox(
+                  Container(
+                    margin: EdgeInsets.only(bottom: 10),
                     height: 50,
                     child: _isLoading ? Center(child: CustCircularProgress()):
                     ElevatedButton.icon(
@@ -236,6 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
       print('Exception: $exception');
     }
   }
+
   void _login() async {
     final String mobileTxt = _mobileTxtController.text.trim();
     final String passwordTxt = _passwordTextController.text.trim();
@@ -277,6 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
       var body = json.encode({
         'mobileNumber': mobileTxt,
         'password': passwordTxt,
+        'deviceId': Platform.isAndroid ? _deviceData['id']:_deviceData['identifierForVendor'],
       });
 
       var response = await post(uri, body: body, headers: {
