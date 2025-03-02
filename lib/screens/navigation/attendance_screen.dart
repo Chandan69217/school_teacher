@@ -22,64 +22,107 @@ class AttendanceScreen extends StatefulWidget {
 class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Attendance'),titleSpacing: 0,foregroundColor: CustColors.white,backgroundColor: CustColors.dark_sky,),
+      appBar: PreferredSize(
+        preferredSize: Size(screenWidth, screenHeight * 0.07),
+        child: AppBar(
+          title: Text('Attendance'),
+          titleTextStyle: TextStyle(fontSize: (screenHeight * 0.07) * 0.4),
+          titleSpacing: 0,
+          foregroundColor: CustColors.white,
+          backgroundColor: CustColors.dark_sky,
+          leading: IconButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              icon: Icon(
+                Icons.arrow_back,
+                size: (screenHeight * 0.07) * 0.5,
+              )),
+        ),
+      ),
       backgroundColor: CustColors.background,
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.05,
+          vertical: screenHeight * 0.02,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Filter Date'),
-            SizedBox(height: 10),
+            Text(
+              'Filter Date',
+              style: TextStyle(fontSize: screenWidth * 0.04),
+            ),
+            SizedBox(height: screenHeight * 0.02),
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(5.0),
+                  child: SizedBox(
+                    height: screenHeight * 0.05,
+                    child: DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(5.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(5.0),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(5.0),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: (screenHeight * 0.05) * 0.3),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10.0),
+                      value: 'Today',
+                      items: ['Today', 'This Week', 'This Month']
+                          .map((e) => DropdownMenuItem<String>(
+                        value: e,
+                        child: Text(
+                          e,
+                          style: TextStyle(
+                              fontSize: (screenHeight * 0.05) * 0.4,
+                              fontWeight: FontWeight
+                                  .w400), // Responsive text size
+                        ),
+                      ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {});
+                      },
                     ),
-                    value: 'Today', // Default value
-                    items: ['Today', 'This Week', 'This Month']
-                        .map((e) => DropdownMenuItem<String>(
-                      value: e,
-                      child: Text(e),
-                    ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        // Handle the selection and filter
-                        // You can store the selected value and use it for fetching data
-                      });
-                    },
                   ),
                 ),
-                SizedBox(width: 10.0),
-                ElevatedButton(
-                  onPressed: () {
-                    // Trigger search with the selected filter value
-                    // You might want to re-fetch data based on selected value
-                    setState(() {
-                      // Update the filter or trigger a new fetch
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigoAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5.0),
+                SizedBox(width: screenWidth * 0.02),
+                SizedBox(
+                  height: screenHeight * 0.05,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigoAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5.0),
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 11.0),
-                    child: Icon(Icons.search, color: Colors.white),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                          vertical: (screenHeight * 0.05) * 0.015),
+                      child: Icon(
+                        Icons.search,
+                        color: Colors.white,
+                        size: (screenHeight * 0.05) * 0.6,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 20.0),
+            SizedBox(height: screenHeight * 0.03),
             Expanded(
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: _getAttendance(),
@@ -87,38 +130,55 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   if (snapshot.hasData) {
                     var data = snapshot.data;
                     return data!.isEmpty
-                        ? Center(child: Text('No Data'))
+                        ? Center(child: Text('No Data',style: TextStyle(fontSize: screenWidth * 0.04),))
                         : ListView.builder(
                       itemCount: data.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
-                        return attendanceCard(data:data[index]); // Pass data to card
+                        return attendanceCard(
+                            data: data[index]); // Pass data to card
                       },
                     );
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(FontAwesomeIcons.triangleExclamation, color: Colors.red,size: 50,),
+                          Icon(
+                            FontAwesomeIcons.triangleExclamation,
+                            color: Colors.red,
+                            size: screenWidth * 0.1,
+                          ),
+                          SizedBox(
+                            height: 5,
+                          ),
+                          Text(
+                            'Failed to load data\n ${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: screenWidth * 0.04),
+                          ),
                           SizedBox(height: 5,),
-                          Text('Failed to load data: ${snapshot.error}'),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: CustColors.dark_sky,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5.0),
+                          SizedBox(
+                            height: screenWidth * 0.09,
+                            width: screenWidth * 0.35,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: CustColors.dark_sky,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(5.0),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: (screenWidth * 0.09) * 0.01,
+                                  vertical: (screenWidth * 0.09) * 0.02,
+                                ),
                               ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20.0,
-                                vertical: 10.0,
-                              ),
+                              onPressed: () {
+                                setState(() {});
+                              },
+                              child: Text('Retry',style: TextStyle(fontSize: (screenWidth * 0.09)*0.4),),
                             ),
-                            onPressed: () {
-                              setState(() {});
-                            },
-                            child: Text('Retry'),
                           ),
                         ],
                       ),
@@ -135,13 +195,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-
   Future<List<Map<String, dynamic>>> _getAttendance() async {
     final connectionResult = await Connectivity().checkConnectivity();
     if (!(connectionResult.contains(ConnectivityResult.mobile) ||
         connectionResult.contains(ConnectivityResult.wifi) ||
         connectionResult.contains(ConnectivityResult.ethernet))) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No internet connection')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('No internet connection')));
       return Future.error({
         'title': 'No connection',
         'desc': 'Please check your internet connectivity and try again.',
@@ -168,10 +228,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             );
             return result;
           } else {
-            return _handleError('Something went wrong !!', 'Please retry after sometime');
+            return _handleError(
+                'Something went wrong !!', 'Please retry after sometime');
           }
         } else {
-          return handleHttpError(context,response);
+          return handleHttpError(context, response);
         }
       } else {
         print('User Token Not Available');
@@ -179,20 +240,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       }
     } catch (exception) {
       print('Exception: $exception');
-      return _handleError('Something went wrong !!', 'Please retry after sometime');
+      return _handleError(
+          'Something went wrong !!', 'Please retry after sometime');
     }
   }
 
-  Future<List<Map<String, dynamic>>> _handleError(String title, String desc) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(desc)));
+  Future<List<Map<String, dynamic>>> _handleError(
+      String title, String desc) async {
+    double screenWidth = MediaQuery.of(context).size.width;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          desc,
+          style: TextStyle(
+              fontSize: screenWidth * 0.02, color: Colors.white, height: 0),
+        ),
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+      ),
+    );
     return Future.error({
       'title': title,
       'desc': desc,
     });
   }
-
-
-
 }
 
 
