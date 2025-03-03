@@ -185,8 +185,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    getUserDetailsFromAPI();
-    _checkLastStatus();
+    WidgetsBinding.instance.addPostFrameCallback((duration){
+      getUserDetailsFromAPI();
+      _checkLastStatus();
+    });
   }
 
   Future<void> getUserDetailsFromAPI() async{
@@ -216,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final body = jsonDecode(response.body);
           if (body[Consts.status] == 'Success') {
             var body = json.decode(response.body);
-            print(body['profile'][0].toString());
+            // print(body['profile'][0].toString());
             setState(() {
               Pref.instance.setString(Consts.userProfile, jsonEncode(body['profile'][0]));
               Teacher.fromJson(body['profile'][0] as Map<String,dynamic>);

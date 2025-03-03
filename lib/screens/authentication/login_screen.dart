@@ -43,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((duration){
       init();
     });
-    init();
   }
 
   init()async{

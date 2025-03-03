@@ -4,6 +4,10 @@ import 'package:school_teacher/initities/theme.dart';
 import 'package:school_teacher/screens/splash/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   runApp(const MyApp());
 }
 
