@@ -1,4 +1,4 @@
-package com.knowyour.staff
+package com.eattendance.staff
 
 import io.flutter.embedding.android.FlutterActivity
 

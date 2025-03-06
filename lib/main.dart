@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       ),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Know Your Staff',
+        title: 'E-Attendance',
         theme: themeData(),
         home: SplashScreen(),
       ),
