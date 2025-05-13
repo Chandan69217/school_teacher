@@ -5,4 +5,6 @@ class Urls{
   static const String staffAttendance = '/api/attendance/staffAttendance';
   static const String staffProfile = '/api/staff/staffprofile';
   static const String lastAttendanceStatus = '/api/Attendance/StaffLastAttendanceStauts';
+  static const String getStaffAttendanceV1 = '/api/Attendance/GetStaffAttendanceV1';
+  static const String staffAttendanceCountV1 = '/api/Attendance/staffAttendanceCountV1';
 }

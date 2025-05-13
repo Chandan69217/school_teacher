@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     var status = await getLocationPermission();
     if (status == LocationPermissionStatus.granted) {
-      var position = await Geolocator.getCurrentPosition();
+      var position = await Geolocator.getCurrentPosition(
+      locationSettings: Platform.isAndroid ? AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        forceLocationManager: true,
+      ) : Platform.isIOS ? AppleSettings(
+        allowBackgroundLocationUpdates: true,
+        activityType: ActivityType.otherNavigation,
+      ):LocationSettings(
+        accuracy: LocationAccuracy.high
+      )
+      );
       if (position.isMocked) {
         showDialog(
             dialogType: DialogType.warning,
@@ -68,7 +79,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Uri uri = Uri.https(Urls.baseUrls, Urls.staffAttendance);
           var body = json.encode({
             "latitude": position.latitude.toString(),
+            // "latitude": '24.960320',
             "longitude": position.longitude.toString(),
+            // "longitude": '84.004822',
             "attendanceTime": dateFormat1.format(DateTime.now()),
             "staffStatus": !_switchValue ? 'IN' : 'OUT'
           });
@@ -90,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   dialogType: DialogType.success,
                   title: 'Success',
                   desc:
-                      '${!_switchValue ? 'Punch Out' : 'Punch In'} successfully');
+                  '${!_switchValue ? 'Punch Out' : 'Punch In'} successfully');
               if(body['response']['status'].toString().toLowerCase() == 'in'){
                 inTime =
                     dateFormat.format(DateTime.parse(body['response']['staffAttendanceTime']));
@@ -120,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _punchBtnLoading = false;
           });
-          print('User Token Not Available');
           return _handleError('Token Missing', 'Please log in again');
         }
       } catch (exception) {
@@ -159,18 +171,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<List<Map<String, dynamic>>> _handleError(
       String title, String desc) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(desc)));
+    double screenWidth = MediaQuery.of(context).size.width;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          desc,
+          style: TextStyle(
+              fontSize: screenWidth * 0.02,
+              color: Colors.white,
+              height: 0
+          ),
+        ),
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+      ),
+    );
     return Future.error({
       'title': title,
       'desc': desc,
     });
   }
 
+
   @override
   void initState() {
     super.initState();
-    getUserDetailsFromAPI();
-    _checkLastStatus();
+    WidgetsBinding.instance.addPostFrameCallback((duration){
+      getUserDetailsFromAPI();
+      _checkLastStatus();
+    });
   }
 
   Future<void> getUserDetailsFromAPI() async{
@@ -190,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (Pref.instance.containsKey(Consts.teacherToken)) {
         final token = Pref.instance.getString(Consts.teacherToken) ?? '';
         Uri uri = Uri.https(Urls.baseUrls, Urls.staffProfile);
-        
+
         final response = await get(uri,headers: {
           Consts.authorization: 'Bearer $token',
           Consts.content_type: 'application/json',
@@ -200,13 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
           final body = jsonDecode(response.body);
           if (body[Consts.status] == 'Success') {
             var body = json.decode(response.body);
-            print(body['profile'][0].toString());
+            // print(body['profile'][0].toString());
             setState(() {
               Pref.instance.setString(Consts.userProfile, jsonEncode(body['profile'][0]));
               Teacher.fromJson(body['profile'][0] as Map<String,dynamic>);
             });
           } else {
-             _handleError(
+            _handleError(
                 'Something went wrong !!', 'Please retry after sometime');
           }
         }else {
@@ -234,279 +264,316 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Dashboard'),
-        titleSpacing: 0,
-        backgroundColor: CustColors.dark_sky,
-        foregroundColor: CustColors.white,
-        leading: Builder(
-            builder: (context) => IconButton(
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-                icon: Icon(Icons.menu, color: CustColors.white))),
-      ),
+      // appBar: PreferredSize(
+      //   preferredSize: Size(screenWidth, screenHeight * 0.07),
+      //   child: AppBar(
+      //     title: Text('Dashboard',style: TextStyle(fontSize:  (screenHeight * 0.07) * 0.4),),
+      //     titleSpacing: 0,
+      //     backgroundColor: CustColors.dark_sky,
+      //     foregroundColor: CustColors.white,
+      //     leading: Builder(
+      //         builder: (context) => IconButton(
+      //             onPressed: () {
+      //               Scaffold.of(context).openDrawer();
+      //             },
+      //             icon: Icon(Icons.menu, color: CustColors.white,size: (screenHeight * 0.07) * 0.5,))),
+      //   ),
+      // ),
       backgroundColor: CustColors.background,
       body: FutureBuilder(future: _getUserDetailsFromCached(),
-          builder:(context,snapshot){
-        if(snapshot.hasData){
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Profile Card
-              Container(
-                constraints: BoxConstraints(
-                  minHeight: 100.0,
-                  maxHeight: 150.0
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF00b894),
-                      Color(0xFF008f99),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                        color: CustColors.grey, blurRadius: 4, offset: Offset(0, 2))
-                  ],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+          builder:(context, snapshot){
+            if(snapshot.hasData){
+              return Padding(
+                padding: EdgeInsets.all(screenWidth * 0.05),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // Profile Card
+                  Container(
+                    height: screenHeight * 0.18,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF00b894),
+                          Color(0xFF008f99),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                            color: CustColors.grey, blurRadius: 4, offset: Offset(0, 2))
+                      ],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.all((screenHeight * 0.18) * 0.07),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor:  Colors.transparent,
-                          child: ClipOval(
-                            child: SizedBox.expand(
-                              child: FadeInImage.assetNetwork(
-                                placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
-                                image: Teacher.teacherImage,
-                                fit: BoxFit.cover,
-                                imageErrorBuilder: (context, error, stackTrace) {
-                                  return Image.asset(
-                                    'assets/icons/dummy-profile-image.webp', // Your fallback asset image
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: (screenHeight * 0.18) * 0.2,
+                              backgroundColor:  Colors.transparent,
+                              child: ClipOval(
+                                child: SizedBox.expand(
+                                  child: FadeInImage.assetNetwork(
+                                    placeholder: 'assets/icons/dummy-profile-image.webp',
+                                    image: Teacher.teacherImage,
                                     fit: BoxFit.cover,
-                                  );
-                                },
+                                    imageErrorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/dummy-profile-image.webp',
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            SizedBox(width: (screenHeight * 0.18) * 0.05),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
+                                      style: TextStyle(
+                                          fontSize: (screenHeight * 0.18) * 0.11,
+                                          fontWeight: FontWeight.bold,
+                                          height: 0,
+                                          color: Colors.white)),
+                                  Text(Teacher.teacherDepartment.isEmpty?'N/A':Teacher.teacherDepartment,
+                                      style:
+                                      TextStyle(fontSize: (screenHeight * 0.18) * 0.09, color: Colors.white,height: 0)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(Teacher.teacherName.isEmpty?'N/A':Teacher.teacherName,
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white)),
-                              Text(Teacher.teacherDepartment.isEmpty?'N/A':Teacher.teacherDepartment,
-                                  style:
-                                  TextStyle(fontSize: 12, color: Colors.white)),
-                            ],
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              fit: FlexFit.tight,
+                              flex: 4,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(height: (screenHeight * 0.18) * 0.05),
+                                  FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text('Shift: ${Teacher.teacherType}',
+                                        style:
+                                        TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white)),
+                                  ),
+                                  FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text('In: $inTime',
+                                        style:
+                                        TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white,height: 0)),
+                                  ),
+                                  FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text('Out: $outTime',
+                                        style:
+                                        TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white,height: 0)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8.0,),
+                            if (_punchBtnLoading)
+                              Flexible(
+                                fit: FlexFit.loose,
+                                flex: 3,
+                                  child: Container(
+                                    padding: EdgeInsets.only(right: 8.0),
+                                    alignment: Alignment.bottomRight,
+                                      child: CustCircularProgress(
+                                        color: Colors.white,
+                                        size: (screenHeight * 0.18) * 0.05,
+                                      )))
+                            else
+                              Flexible(
+                                fit: FlexFit.loose,
+                                flex: 3,
+                                child: FlutterSwitch(
+                                  width: screenWidth * 0.37,
+                                  height: screenWidth * 0.1,
+                                  borderRadius: 30.0,
+                                  showOnOff: true,
+                                  activeTextColor: CustColors.white,
+                                  inactiveTextColor: CustColors.white,
+                                  padding: (screenWidth * 0.37)*0.06,
+                                  activeText: 'Out',
+                                  inactiveText: 'In',
+                                  inactiveColor: Colors.green,
+                                  activeColor: Colors.red,
+                                  activeTextFontWeight: FontWeight.normal,
+                                  inactiveTextFontWeight: FontWeight.normal,
+                                  valueFontSize: (screenWidth * 0.37)*0.12,
+                                  activeIcon: Icon(Icons.arrow_back_rounded),
+                                  inactiveIcon: Icon(Icons.arrow_forward_rounded),
+                                  onToggle: _markAttendance, value: _switchValue,
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 5),
-                            Text('Shift: ${Teacher.teacherType}',
-                                style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                            Text('In: $inTime',
-                                style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                            Text('Out: $outTime',
-                                style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                          ],
-                        ),
-                        Spacer(),
-                        if (_punchBtnLoading)
-                          Expanded(
-                              child: Center(
-                                  child: CustCircularProgress(
-                                    color: Colors.white,
-                                  )))
-                        else
-                          FlutterSwitch(
-                            width: 120.0,
-                            height: 40,
-                            //value: lastStatus == 'IN' ? true:false,
-                            borderRadius: 30.0,
-                            showOnOff: true,
-                            activeTextColor: CustColors.white,
-                            inactiveTextColor: CustColors.white,
-                            padding: 8.0,
-                            activeText: 'Out',
-                            inactiveText: 'In',
-                            inactiveColor: Colors.green,
-                            activeColor: Colors.red,
-                            activeTextFontWeight: FontWeight.normal,
-                            inactiveTextFontWeight: FontWeight.normal,
-                            valueFontSize: 18.0,
-                            activeIcon: Icon(Icons.arrow_back_rounded),
-                            inactiveIcon: Icon(Icons.arrow_forward_rounded),
-                            onToggle: _markAttendance, value: _switchValue,
+                  ),
+                  SizedBox(height: 10,),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: screenWidth * 0.025, horizontal: screenWidth * 0.02),
+                    child:         Text('Recent Activity',
+                        style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            fontWeight: FontWeight.bold,
+                            color: CustColors.dark_grey)),
+                  ),
+
+                  // Attendance list
+                  Expanded(
+                    flex: 4,
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _getAttendance(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          var data = snapshot.data;
+                          if (data!.isEmpty) {
+                            return Center(child: Text('No Data',style: TextStyle(fontSize: screenWidth * 0.04),));
+                          } else {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: ListView.builder(
+                                    itemCount: data.length > 10 ? 11: data.length,
+                                    shrinkWrap: true,
+                                    itemBuilder: (context, index) {
+                                      if (index == 10) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                                          child: ElevatedButton(
+                                            onPressed: () {Navigator.of(context).push(MaterialPageRoute(builder: (context)=> AttendanceScreen()));},
+                                            style: ElevatedButton.styleFrom(backgroundColor: CustColors.dark_sky,foregroundColor: CustColors.white),
+                                            child: Text('See More',style: TextStyle(fontSize: (screenHeight * 0.02)),),
+                                          ),
+                                        );
+                                      } else
+                                        return attendanceCard(data: data[index]);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        } else if (snapshot.hasError) {
+                          return Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  FontAwesomeIcons.triangleExclamation,
+                                  color: Colors.red,
+                                  size: screenWidth * 0.1,
+                                ),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                Text(
+                                  'Failed to load data\n ${snapshot.error}',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: screenWidth * 0.04),
+                                ),
+                                SizedBox(height: 5,),
+                                SizedBox(
+                                  height: screenWidth * 0.09,
+                                  width: screenWidth * 0.35,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: CustColors.dark_sky,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(5.0),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: (screenWidth * 0.09) * 0.01,
+                                        vertical: (screenWidth * 0.09) * 0.02,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {});
+                                    },
+                                    child: Text('Retry',style: TextStyle(fontSize: (screenWidth * 0.09)*0.4),),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          return Center(child: CustCircularProgress());
+                        }
+                      },
+                    ),
+                  ),
+                ]),
+              );
+            } else if(snapshot.hasError){
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      FontAwesomeIcons.triangleExclamation,
+                      color: Colors.red,
+                      size: screenWidth * 0.1,
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Text(
+                      'Failed to load data\n ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: screenWidth * 0.04),
+                    ),
+                    SizedBox(height: 5,),
+                    SizedBox(
+                      height: screenWidth * 0.09,
+                      width: screenWidth * 0.35,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CustColors.dark_sky,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5.0),
                           ),
-                      ],
+                          padding: EdgeInsets.symmetric(
+                            horizontal: (screenWidth * 0.09) * 0.01,
+                            vertical: (screenWidth * 0.09) * 0.02,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {});
+                        },
+                        child: Text('Retry',style: TextStyle(fontSize: (screenWidth * 0.09)*0.4),),
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10.0),
-                child: Text('Recent Activity',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: CustColors.dark_grey)),
-              ),
-
-              // Attendance list
-              Expanded(
-                flex: 4,
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _getAttendance(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      var data = snapshot.data;
-                      if (data!.isEmpty) {
-                        return Center(child: Text('No Data'));
-                      } else {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: data.length > 10 ? 11: data.length,
-                                shrinkWrap: true,
-                                itemBuilder: (context, index) {
-                                  if (index == 10) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 16.0),
-                                      child: ElevatedButton(
-                                        onPressed: () {Navigator.of(context).push(MaterialPageRoute(builder: (context)=> AttendanceScreen()));},
-                                        style: ElevatedButton.styleFrom(backgroundColor: CustColors.dark_sky,foregroundColor: CustColors.white),
-                                        child: Text('See More'),
-                                      ),
-                                    );
-                                  } else
-                                    return attendanceCard(data: data[index]); // Pass data to card
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    } else if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              FontAwesomeIcons.triangleExclamation,
-                              color: Colors.red,
-                              size: 50,
-                            ),
-                            SizedBox(
-                              height: 5,
-                            ),
-                            Text(
-                              'Failed to load data\n ${snapshot.error}',
-                              textAlign: TextAlign.center,
-                            ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: CustColors.dark_sky,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                ),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 20.0,
-                                  vertical: 10.0,
-                                ),
-                              ),
-                              onPressed: () {
-                                setState(() {});
-                              },
-                              child: Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      return Center(child: CustCircularProgress());
-                    }
-                  },
-                ),
-              ),
-            ]),
-          );
-        }else if(snapshot.hasError){
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  FontAwesomeIcons.triangleExclamation,
-                  color: Colors.red,
-                  size: 50,
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  'Failed to load data\n ${snapshot.error}',
-                  textAlign: TextAlign.center,
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CustColors.dark_sky,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 10.0,
-                    ),
-                  ),
-                  onPressed: () {
-                    setState(() {});
-                  },
-                  child: Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }else{
-          return Center(child: CustCircularProgress());
-        }
+              );
+            } else {
+              return Center(child: CustCircularProgress());
+            }
           }),
-      drawer: _drawerUI()
+      // drawer: _drawerUI(),
     );
   }
+
 
   Future<List<Map<String, dynamic>>> _getAttendance() async {
     final connectionResult = await Connectivity().checkConnectivity();
@@ -559,8 +626,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildInfoRow(String title, String value) {
+    double screenWidth = MediaQuery.of(context).size.width * 0.8;
+    double screenHeight = MediaQuery.of(context).size.height * 0.69;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -569,51 +639,77 @@ class _HomeScreenState extends State<HomeScreen> {
             title,
             style: TextStyle(
               color: CustColors.grey,
-              fontSize: 16.0,
+              fontSize: screenWidth * 0.04,
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 14.0,
+              fontSize: screenWidth * 0.035,
               color: CustColors.black,
               fontWeight: FontWeight.w400,
             ),
           ),
-          Divider(color: CustColors.grey.withOpacity(0.3),)
+          Divider(
+            color: CustColors.grey.withOpacity(0.3),
+          ),
         ],
       ),
     );
   }
 
-  showDialog({
+
+  void showDialog({
     String? title,
     String? desc,
     required DialogType dialogType,
   }) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
     AwesomeDialog(
-      padding: EdgeInsets.symmetric(horizontal: 10),
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
       context: context,
       title: title,
+      titleTextStyle: TextStyle(
+          fontSize:  screenWidth * 0.05
+      ),
       desc: desc,
-      descTextStyle: TextStyle(fontSize: 12),
+      descTextStyle: TextStyle(
+        fontSize: screenWidth * 0.035,
+      ),
       dialogType: dialogType,
-      btnOkOnPress: () {},
+      btnOkOnPress: dialogType == DialogType.success ? (){} : (){
+        _markAttendance(!_switchValue);
+      },
+      btnOkColor:  dialogType == DialogType.success ? Colors.green : Colors.red,
       dismissOnBackKeyPress: false,
+      btnCancelOnPress: dialogType == DialogType.warning? (){}:null,
+      btnCancelColor: Colors.grey,
       dismissOnTouchOutside: false,
       animType: AnimType.bottomSlide,
+
+      btnOkText: dialogType == DialogType.success ? 'OK' : 'Refresh location',
+      dialogBorderRadius: BorderRadius.circular(10),
+      dialogBackgroundColor: Colors.white,
+      width: screenWidth,
     ).show();
   }
 
+
   Widget _drawerUI() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+    double drawerWidth = screenWidth * 0.8;
     return Drawer(
       backgroundColor: CustColors.dark_sky,
-      child: Column(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 20.0),
+      width: drawerWidth,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              height: screenHeight * 0.31,
+              padding: EdgeInsets.symmetric(horizontal: (screenHeight * 0.31)* 0.05),
               decoration: BoxDecoration(
                 color: CustColors.dark_sky,
               ),
@@ -622,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SizedBox(
-                      width: MediaQuery.of(context).size.width,
+                      width: drawerWidth,
                       child: Column(
                         children: [
                           Container(
@@ -631,17 +727,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               border: Border.all(width: 2, color: CustColors.white),
                             ),
                             child: CircleAvatar(
-                              radius: 60,
+                              radius: (screenHeight * 0.31) * 0.25,
                               backgroundColor: Colors.transparent,
                               child: ClipOval(
                                 child: SizedBox.expand(
                                   child: FadeInImage.assetNetwork(
-                                    placeholder: 'assets/icons/dummy-profile-image.webp', // Your asset placeholder image
+                                    placeholder: 'assets/icons/dummy-profile-image.webp',
                                     image: Teacher.teacherImage,
                                     fit: BoxFit.cover,
                                     imageErrorBuilder: (context, error, stackTrace) {
                                       return Image.asset(
-                                        'assets/icons/dummy-profile-image.webp', // Your fallback asset image
+                                        'assets/icons/dummy-profile-image.webp',
                                         fit: BoxFit.cover,
                                       );
                                     },
@@ -650,35 +746,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-                          SizedBox(height: 5.0),
+                          SizedBox(height: (screenHeight * 0.31) * 0.02),
                           Text(
                             Teacher.teacherName.isEmpty ? 'N/A' : Teacher.teacherName,
                             style: TextStyle(
-                              fontSize: 20.0,
-                              color: CustColors.white,
-                              fontWeight: FontWeight.bold,
+                                fontSize: (screenHeight * 0.31) * 0.09,
+                                color: CustColors.white,
+                                fontWeight: FontWeight.bold,
+                                height: 0
                             ),
                           ),
                           Text(
                             Teacher.teacherMobileNumber.isEmpty ? 'N/A' : '+91 ${Teacher.teacherMobileNumber}',
-                            style: TextStyle(color: CustColors.background, fontSize: 14),
+                            style: TextStyle(
+                                color: CustColors.background,
+                                fontSize: (screenHeight * 0.31) * 0.049,
+                                height: 0
+                            ),
                           ),
-                          SizedBox(height: 8.0),
-                          // SizedBox(
-                          //   width: MediaQuery.of(context).size.width * 0.7,
-                          //   child: ElevatedButton(
-                          //     onPressed: () {},
-                          //     style: ElevatedButton.styleFrom(
-                          //       backgroundColor: Color(0XFFD3D3D3),
-                          //       foregroundColor: CustColors.black,
-                          //       shape: RoundedRectangleBorder(
-                          //         borderRadius: BorderRadius.circular(5.0),
-                          //       ),
-                          //       padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                          //     ),
-                          //     child: Text('Change Password'),
-                          //   ),
-                          // ),
+                          SizedBox(height: (screenHeight * 0.31) * 0.02),
                         ],
                       ),
                     ),
@@ -686,15 +772,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ),
-          // Aligning logout button and version text at the bottom
-          Expanded(
-            flex: 2,
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
+
+            Container(
+              height: screenHeight * 0.69,
+              padding: EdgeInsets.symmetric(vertical: (screenHeight * 0.69) * 0.02, horizontal: drawerWidth * 0.05),
               decoration: BoxDecoration(color: CustColors.background),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Pushes content to top and bottom
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,16 +791,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildInfoRow('Gender', '${Teacher.teacherGender}'),
                     ],
                   ),
-
                   Column(
                     children: [
-                      // SizedBox(height: 70,),
                       SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.6,
+                        width: drawerWidth * 0.6,
                         child: TextButton.icon(
-                          icon: Icon(Icons.logout),
+                          icon: Icon(Icons.logout,color: Colors.red,size: drawerWidth * 0.065,),
                           onPressed: () {
-                            // Pref.instance.clear();
                             Pref.instance.remove(Consts.isLogin);
                             Pref.instance.remove(Consts.teacherToken);
                             Pref.instance.remove(Consts.organisationId);
@@ -730,23 +811,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.red,
-                            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                            textStyle: TextStyle(fontSize: (screenHeight * 0.69) * 0.03),
+                            padding: EdgeInsets.symmetric(horizontal: (screenHeight * 0.69) * 0.04, vertical: screenHeight * 0.015),
                           ),
                           label: const Text('Logout'),
                         ),
                       ),
-                      SizedBox(height: 20),
+                      SizedBox(height: (screenHeight * 0.69) * 0.02),
                       Text(
                         'Version 1.01.321',
-                        style: Theme.of(context).textTheme.bodySmall!.copyWith(color: CustColors.grey),
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(color: CustColors.grey,fontSize: drawerWidth * 0.05),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

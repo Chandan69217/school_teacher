@@ -29,7 +29,7 @@ class SplashScreen extends StatelessWidget {
 
   Widget _navigateToNextScreen(BuildContext context, bool isLoggedIn) {
     return isLoggedIn
-        ? HomeScreen()
+        ? DashboardScreen()
         : LoginScreen();
   }
 

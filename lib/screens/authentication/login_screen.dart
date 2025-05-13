@@ -1,23 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:school_teacher/initities/read_device_data.dart';
 import 'package:school_teacher/screens/dashboard.dart';
-import 'package:school_teacher/screens/navigation/home_screen.dart';
 import 'package:school_teacher/screens/splash/splash_screen.dart';
 import 'package:school_teacher/widgets/cust_circular_progress_indicator.dart';
-
 import '../../initities/colors.dart';
 import '../../initities/consts.dart';
 import '../../initities/handle_http_error.dart';
 import '../../initities/urls.dart';
 import '../../model/teacher.dart';
+
+
 
 
 class LoginScreen extends StatefulWidget {
@@ -38,11 +35,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    init();
+    WidgetsBinding.instance.addPostFrameCallback((duration){
+      init();
+    });
   }
 
   init()async{
-
     if(Platform.isAndroid){
       _deviceData = readAndroidBuildData(await deviceInfoPlugin.androidInfo);
     }else if(Platform.isIOS){
@@ -51,9 +49,11 @@ class _LoginScreenState extends State<LoginScreen> {
     if(Pref.instance.containsKey('remember_me')){
       List<String> values = Pref.instance.getStringList('remember_me')??[];
       if(values.isNotEmpty){
-        isChecked = true;
-        _mobileTxtController.text = values[0];
-        _passwordTextController.text = values[1];
+        setState(() {
+          isChecked = true;
+          _mobileTxtController.text = values[0];
+          _passwordTextController.text = values[1];
+        });
       }
     }
     print(_deviceData.toString());
@@ -61,45 +61,50 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Center(
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.9,
+              width: screenWidth * 0.9,
               constraints: const BoxConstraints(maxWidth: 400),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // SizedBox(height: 100,),
-                  // Logo
-                  Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [Container(
-                      // width: 220,
-                      // height: 220,
-                      margin: EdgeInsets.only(bottom: 20),
-                      child: Image.asset(
-                        'assets/icons/hello_bro.webp',
-                        fit: BoxFit.cover,
-                      ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.only(bottom: screenHeight * 0.05),
+                            child: Image.asset(
+                              'assets/icons/hello_bro.webp',
+                              fit: BoxFit.cover,
+                              width: screenWidth * 0.7,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: (screenWidth * 0.7) * 0.12,
+                            child: Text('Hello !!',style: TextStyle(
+                              fontSize: screenWidth * 0.08,
+                              fontWeight: FontWeight.bold,
+                            ),),
+                          )
+                        ]
                     ),
-                      Positioned(
-                        bottom: 45,
-                        child: Text('Hello !!',style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),),
-                      )
-                    ]
                   ),
+
                   // Title
                   Text(
                     'Login',
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: screenWidth * 0.065,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -108,14 +113,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Hello, there login to continue',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: screenWidth * 0.035,
                       color: Colors.grey,
                     ),
                   ),
 
-                  SizedBox(height: 20),
+                  SizedBox(height: screenHeight * 0.03),
 
-                  // Employee ID Input
+                  // Employee Mobile Input
                   InputField(
                     controller: _mobileTxtController,
                     placeholder: 'Mobile No',
@@ -125,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputType: TextInputType.number,
                   ),
 
-                  SizedBox(height: 15),
+                  SizedBox(height: screenHeight * 0.02),
 
                   // Password Input
                   InputField(
@@ -137,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.done,
                   ),
 
-                  SizedBox(height: 15),
+                  SizedBox(height: screenHeight * 0.01),
 
                   // Remember Me and Forgot Password
                   Row(
@@ -148,11 +153,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           Checkbox(
                             activeColor: CustColors.dark_sky,
                             value: isChecked,
-                            onChanged: onChanged
+                            onChanged: onChanged,
                           ),
                           Text(
                             'Remember Me',
-                            style: TextStyle(fontSize: 14),
+                            style: TextStyle(fontSize: screenWidth * 0.035),
                           ),
                         ],
                       ),
@@ -161,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           'Forget Password?',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: screenWidth * 0.035,
                             color: Color(0xFFb5651d),
                           ),
                         ),
@@ -169,29 +174,30 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  SizedBox(height: 20),
+                  SizedBox(height: screenHeight * 0.04),
 
                   // Login Button
                   Container(
-                    margin: EdgeInsets.only(bottom: 10),
-                    height: 50,
+                    margin: EdgeInsets.only(bottom: screenHeight * 0.015),
+                    height: screenHeight * 0.06,
                     child: _isLoading ? Center(child: CustCircularProgress()):
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CustColors.dark_sky,
                         foregroundColor: CustColors.white,
+                        iconColor: CustColors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular((screenHeight * 0.06)*0.9),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: 15),
+                        padding: EdgeInsets.symmetric(vertical: (screenHeight * 0.06)*0.02),
                         minimumSize: Size(double.infinity, 0),
                       ),
                       onPressed: _login,
-                      icon: Icon(Icons.login),
+                      icon: Icon(Icons.login,size: (screenHeight * 0.06) * 0.4),
                       label: Text(
                         'Login',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: (screenHeight * 0.06) * 0.3,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -204,6 +210,128 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  // on login button click
+  void _login() async {
+    final String mobileTxt = _mobileTxtController.text.trim();
+    final String passwordTxt = _passwordTextController.text.trim();
+    final List<ConnectivityResult> connectivityResult =
+    await Connectivity().checkConnectivity();
+
+    if (mobileTxt.isEmpty) {
+      _mobileFocusNode.requestFocus();
+      return;
+    }else if(mobileTxt.length < 10){
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('please enter vaild mobile no'),
+      ));
+      return;
+    }
+    if (passwordTxt.isEmpty) {
+      _passFocusNode.requestFocus();
+      return;
+    }
+
+    if(isChecked){
+      onChanged(isChecked);
+    }
+
+    if (!(connectivityResult.contains(ConnectivityResult.mobile) ||
+        connectivityResult.contains(ConnectivityResult.wifi) ||
+        connectivityResult.contains(ConnectivityResult.ethernet))) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('No Connections'),
+      ));
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      var uri = Uri.https(Urls.baseUrls, Urls.staffLogin);
+      var body = json.encode({
+        'mobileNumber': mobileTxt,
+        'password': passwordTxt,
+        // 'deviceId': 'QSR1.211112.011',
+        'deviceId': Platform.isAndroid ? _deviceData['id']:_deviceData['identifierForVendor'],
+      });
+      var response = await post(uri, body: body, headers: {
+        'Content-Type': 'application/json',
+      });
+
+      var rawData = json.decode(response.body);
+      if (response.statusCode == 200) {
+        bool status = (rawData['status']).toString().toLowerCase() == 'success' ? true:false;
+        if(status){
+          Pref.instance.setBool(Consts.isLogin, true);
+          Pref.instance.setString(
+              Consts.teacherToken, rawData['data']['user'][Consts.teacherToken]);
+          getUserDetailsFromAPI();
+          Pref.instance.setString(
+              Consts.organisationId, rawData['data']['user'][Consts.organisationId].toString());
+          Pref.instance.setString(
+              Consts.teacherCode, rawData['data']['user'][Consts.teacherCode]);
+          Pref.instance.setString(
+              Consts.organisationCode, rawData['data']['user'][Consts.organisationCode].toString());
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => DashboardScreen()),
+                (route) => false,
+          );
+        }else{
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(rawData['message'] ?? 'Unable to login'),
+          ));
+        }
+      } else if (response.statusCode == 400) {
+        var rawData = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(rawData['message'] ?? 'Bad request, please try again.'),
+        ));
+      } else if (response.statusCode == 401) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Unauthorized access, please login again.'),
+        ));
+      } else if (response.statusCode == 403) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Forbidden, you do not have permission to access this resource.'),
+        ));
+      } else if (response.statusCode == 404) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Requested resource not found.'),
+        ));
+      } else if (response.statusCode == 500) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Internal Server Error, please try again later.'),
+        ));
+      } else if (response.statusCode == 503) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Service Unavailable, please try again later.'),
+        ));
+      } else if (response.statusCode >= 400 && response.statusCode < 500) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Client Error: ${response.statusCode}. Please check your request.'),
+        ));
+      } else if (response.statusCode >= 500 && response.statusCode < 600) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Server Error: ${response.statusCode}. Please try again later.'),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Unexpected error: ${response.statusCode}. Please try again.'),
+        ));
+      }
+    } catch (exception, trace) {
+      print('Exception: $exception, Trace: $trace');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Network or server error, please check your connection.'),
+      ));
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> getUserDetailsFromAPI() async{
@@ -251,137 +379,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _login() async {
-    final String mobileTxt = _mobileTxtController.text.trim();
-    final String passwordTxt = _passwordTextController.text.trim();
-    final List<ConnectivityResult> connectivityResult =
-    await Connectivity().checkConnectivity();
-
-    if (mobileTxt.isEmpty) {
-      _mobileFocusNode.requestFocus();
-      return;
-    }else if(mobileTxt.length < 10){
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('please enter vaild mobile no'),
-      ));
-      return;
-    }
-    if (passwordTxt.isEmpty) {
-      _passFocusNode.requestFocus();
-      return;
-    }
-
-    if(isChecked){
-      onChanged(isChecked);
-    }
-
-    if (!(connectivityResult.contains(ConnectivityResult.mobile) ||
-        connectivityResult.contains(ConnectivityResult.wifi) ||
-        connectivityResult.contains(ConnectivityResult.ethernet))) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('No Connections'),
-      ));
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      var uri = Uri.https(Urls.baseUrls, Urls.staffLogin);
-      var body = json.encode({
-        'mobileNumber': mobileTxt,
-        'password': passwordTxt,
-        'deviceId': Platform.isAndroid ? _deviceData['id']:_deviceData['identifierForVendor'],
-      });
-
-      var response = await post(uri, body: body, headers: {
-        'Content-Type': 'application/json',
-      });
-
-      // Check status code
-      if (response.statusCode == 200) {
-        var rawData = json.decode(response.body);
-        Pref.instance.setBool(Consts.isLogin, true);
-        Pref.instance.setString(
-            Consts.teacherToken, rawData['data']['user'][Consts.teacherToken]);
-        getUserDetailsFromAPI();
-        Pref.instance.setString(
-            Consts.organisationId, rawData['data']['user'][Consts.organisationId].toString());
-        Pref.instance.setString(
-            Consts.teacherCode, rawData['data']['user'][Consts.teacherCode]);
-        Pref.instance.setString(
-            Consts.organisationCode, rawData['data']['user'][Consts.organisationCode].toString());
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-              (route) => false,
-        );
-      } else if (response.statusCode == 400) {
-        var rawData = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(rawData['message'] ?? 'Bad request, please try again.'),
-        ));
-      } else if (response.statusCode == 401) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Unauthorized access, please login again.'),
-        ));
-      } else if (response.statusCode == 403) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Forbidden, you do not have permission to access this resource.'),
-        ));
-      } else if (response.statusCode == 404) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Requested resource not found.'),
-        ));
-      } else if (response.statusCode == 500) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Internal Server Error, please try again later.'),
-        ));
-      } else if (response.statusCode == 503) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Service Unavailable, please try again later.'),
-        ));
-      } else if (response.statusCode >= 400 && response.statusCode < 500) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Client Error: ${response.statusCode}. Please check your request.'),
-        ));
-      } else if (response.statusCode >= 500 && response.statusCode < 600) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Server Error: ${response.statusCode}. Please try again later.'),
-        ));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Unexpected error: ${response.statusCode}. Please try again.'),
-        ));
-      }
-    } catch (exception, trace) {
-      print('Exception: $exception, Trace: $trace');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Network or server error, please check your connection.'),
-      ));
-    }
-    
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
   void onChanged(bool? value) {
-    if(value!=null){
+    if(value != null){
       isChecked = value;
       if(isChecked){
         setState(() {
-          Pref.instance.setStringList('remember_me', [_mobileTxtController.text,_passwordTextController.text]);
+          Pref.instance.setStringList('remember_me', [_mobileTxtController.text, _passwordTextController.text]);
         });
-      }else{
+      } else {
         setState(() {
-          Pref.instance.remove('remember_me',);
+          Pref.instance.remove('remember_me');
         });
       }
     }
   }
-
 }
+
+
 
 class InputField extends StatefulWidget {
   final String placeholder;
@@ -394,7 +408,7 @@ class InputField extends StatefulWidget {
   final IconData? suffixIcon;
   TextInputAction? textInputAction;
   bool obscureText = false;
-  InputField({super.key,
+  InputField({
     required this.placeholder,
     required this.icon,
     this.isPassword = false,
@@ -404,17 +418,19 @@ class InputField extends StatefulWidget {
     this.maxLength,
     this.textInputType = TextInputType.text,
     required this.textInputAction
-  }){
+  }) {
     obscureText = this.isPassword;
   }
 
   @override
   State<InputField> createState() => _InputFieldState();
 }
-class _InputFieldState extends State<InputField> {
 
+class _InputFieldState extends State<InputField> {
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
     return TextFormField(
       obscureText: widget.obscureText,
       focusNode: widget.focusNode,
@@ -422,18 +438,36 @@ class _InputFieldState extends State<InputField> {
       maxLength: widget.maxLength,
       textInputAction: widget.textInputAction,
       keyboardType: widget.textInputType,
-      style: Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: 18.0),
+      style: Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: (screenWidth * 0.045)),
       decoration: InputDecoration(
-        counterText: '',
-        labelText: widget.placeholder,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: BorderSide(color: Colors.grey),
-        ),
-        prefixIcon: Icon(widget.icon,color: Colors.black,),
-        suffixIcon: widget.isPassword ? IconButton(onPressed: (){setState(() {
-          widget.obscureText = !widget.obscureText;
-        });}, icon: Icon(widget.obscureText ? Icons.visibility_off : Icons.visibility_rounded)):null
+          counterText: '',
+          labelText: widget.placeholder,
+          labelStyle: TextStyle(
+              color: Colors.grey,
+              fontSize: screenWidth * 0.04
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: (screenWidth * 0.04),vertical: screenWidth >= 375 ? screenWidth * 0.04:0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: BorderSide(color: Colors.grey),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: BorderSide(color: Colors.grey),
+          ),
+          prefixIcon: Icon(widget.icon, color: Colors.black,size: (screenWidth * 0.04)*1.5,),
+          suffixIcon: widget.isPassword ? IconButton(
+            onPressed: () {
+              setState(() {
+                widget.obscureText = !widget.obscureText;
+              });
+            },
+            icon: Icon(widget.obscureText ? Icons.visibility_off : Icons.visibility_rounded,color: Colors.black,size: (screenWidth * 0.04)*1.5,),
+          ) : null
       ),
     );
   }

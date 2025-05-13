@@ -4,12 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:school_teacher/initities/colors.dart';
+import 'package:school_teacher/initities/consts.dart';
 import 'package:school_teacher/initities/permission_handler.dart';
 import 'package:school_teacher/screens/navigation/attendance_screen.dart';
-import 'package:school_teacher/screens/navigation/payslip_screen.dart';
-import 'package:school_teacher/screens/navigation/profile_screen.dart';
-import '../widgets/bottom_navigation_icon.dart';
+import 'package:school_teacher/screens/splash/splash_screen.dart';
+import '../model/teacher.dart';
+import 'authentication/login_screen.dart';
 import 'navigation/home_screen.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -20,12 +22,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Widget> _screens = [];
   int _currentIndex = 0;
   GlobalKey<CurvedNavigationBarState> _bottomNavigationKey = GlobalKey();
-  static final List<String> titles = ['Home','Profile','Payslip','Attendance'];
+  // static final List<String> titles = ['Home','Profile','Payslip','Attendance'];
+  static final List<String> titles = ['Home','Attendance'];
 
   @override
   void initState() {
     super.initState();
-    _screens = [HomeScreen(),ProfileScreen(),PayslipScreen(),AttendanceScreen()];
+    // _screens = [HomeScreen(),ProfileScreen(),PayslipScreen(),AttendanceScreen()];
+    _screens = [HomeScreen(),AttendanceScreen()];
     getLocationPermission();
   }
 
@@ -34,34 +38,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: CustColors.dark_sky,
-        centerTitle: true,
+        // centerTitle: true,
         title: Text(titles[_currentIndex], style:Theme.of(context).textTheme.bodyMedium!.copyWith(color: CustColors.white)),
         leading: Builder(builder:(context)=> IconButton(onPressed:(){Scaffold.of(context).openDrawer();},icon: Icon(Icons.menu, color: CustColors.white))),
       ),
-      body: _screens[_currentIndex],
-
-      drawer: Drawer(
-        child: Column(
-          children: [
-            Expanded(
-              flex: 2,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: CustColors.dark_sky,
-                  borderRadius: BorderRadius.only(bottomRight: Radius.circular(20.0),bottomLeft: Radius.circular(20.0))
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 4,
-                child: Container(
-              decoration: BoxDecoration(
-                color: CustColors.background
-              ),
-            ))
-          ],
-        ),
+      body: IndexedStack(
+        index: _currentIndex,
+          children: _screens
       ),
+
+      drawer: _drawerUI(),
       // Bottom Navigation Bar
       bottomNavigationBar: CurvedNavigationBar(
         index: _currentIndex,
@@ -82,18 +68,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Home',
             labelStyle: TextStyle(color: CustColors.white,fontSize: 12)
           ),
-          CurvedNavigationBarItem(
-            child: Icon(FontAwesomeIcons.userLarge,size: 20,color: CustColors.white,),
-            // Image.asset('assets/icons/profile.webp',width: 27,height: 27,color: CustColors.white,),
-            label: 'Profile',
-              labelStyle: TextStyle(color: CustColors.white,fontSize: 12)
-          ),
-          CurvedNavigationBarItem(
-            child: Icon(FontAwesomeIcons.wallet,size: 20,color: CustColors.white,),
-            // Image.asset('assets/icons/payslip.webp',width: 27,height: 27,color: CustColors.white,),
-            label: 'Payslip',
-              labelStyle: TextStyle(color: CustColors.white,fontSize: 12)
-          ),
+          // CurvedNavigationBarItem(
+          //   child: Icon(FontAwesomeIcons.userLarge,size: 20,color: CustColors.white,),
+          //   // Image.asset('assets/icons/profile.webp',width: 27,height: 27,color: CustColors.white,),
+          //   label: 'Profile',
+          //     labelStyle: TextStyle(color: CustColors.white,fontSize: 12)
+          // ),
+          // CurvedNavigationBarItem(
+          //   child: Icon(FontAwesomeIcons.wallet,size: 20,color: CustColors.white,),
+          //   // Image.asset('assets/icons/payslip.webp',width: 27,height: 27,color: CustColors.white,),
+          //   label: 'Payslip',
+          //     labelStyle: TextStyle(color: CustColors.white,fontSize: 12)
+          // ),
           CurvedNavigationBarItem(
             child: Icon(FontAwesomeIcons.userCheck,size: 20,color: CustColors.white,),
             // Image.asset('assets/icons/attendance.webp',width: 27,height: 27,color: CustColors.white,),
@@ -158,4 +144,174 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // ),
     );
   }
+
+  Widget _drawerUI() {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+    double drawerWidth = screenWidth * 0.8;
+    return Drawer(
+      backgroundColor: CustColors.dark_sky,
+      width: drawerWidth,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              height: screenHeight * 0.31,
+              padding: EdgeInsets.symmetric(horizontal: (screenHeight * 0.31)* 0.05),
+              decoration: BoxDecoration(
+                color: CustColors.dark_sky,
+              ),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: drawerWidth,
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(width: 2, color: CustColors.white),
+                            ),
+                            child: CircleAvatar(
+                              radius: (screenHeight * 0.31) * 0.25,
+                              backgroundColor: Colors.transparent,
+                              child: ClipOval(
+                                child: SizedBox.expand(
+                                  child: FadeInImage.assetNetwork(
+                                    placeholder: 'assets/icons/dummy-profile-image.webp',
+                                    image: Teacher.teacherImage,
+                                    fit: BoxFit.cover,
+                                    imageErrorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/dummy-profile-image.webp',
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: (screenHeight * 0.31) * 0.02),
+                          Text(
+                            Teacher.teacherName.isEmpty ? 'N/A' : Teacher.teacherName,
+                            style: TextStyle(
+                                fontSize: (screenHeight * 0.31) * 0.09,
+                                color: CustColors.white,
+                                fontWeight: FontWeight.bold,
+                                height: 0
+                            ),
+                          ),
+                          Text(
+                            Teacher.teacherMobileNumber.isEmpty ? 'N/A' : '+91 ${Teacher.teacherMobileNumber}',
+                            style: TextStyle(
+                                color: CustColors.background,
+                                fontSize: (screenHeight * 0.31) * 0.049,
+                                height: 0
+                            ),
+                          ),
+                          SizedBox(height: (screenHeight * 0.31) * 0.02),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            Container(
+              height: screenHeight * 0.69,
+              padding: EdgeInsets.symmetric(vertical: (screenHeight * 0.69) * 0.02, horizontal: drawerWidth * 0.05),
+              decoration: BoxDecoration(color: CustColors.background),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoRow('Teacher ID', '${Teacher.teacherId}'),
+                      _buildInfoRow('Email ID', '${Teacher.teacherEmailId}'),
+                      _buildInfoRow('Designation', '${Teacher.teacherDesignation}'),
+                      _buildInfoRow('Teacher Type', '${Teacher.teacherType}'),
+                      _buildInfoRow('Department', '${Teacher.teacherDepartment}'),
+                      _buildInfoRow('Gender', '${Teacher.teacherGender}'),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: drawerWidth * 0.6,
+                        child: TextButton.icon(
+                          icon: Icon(Icons.logout,color: Colors.red,size: drawerWidth * 0.065,),
+                          onPressed: () {
+                            Pref.instance.remove(Consts.isLogin);
+                            Pref.instance.remove(Consts.teacherToken);
+                            Pref.instance.remove(Consts.organisationId);
+                            Pref.instance.remove(Consts.organisationCode);
+                            Pref.instance.remove(Consts.teacherCode);
+                            Pref.instance.remove(Consts.userProfile);
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (context) => LoginScreen()),
+                                  (route) => false,
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            textStyle: TextStyle(fontSize: (screenHeight * 0.69) * 0.03),
+                            padding: EdgeInsets.symmetric(horizontal: (screenHeight * 0.69) * 0.04, vertical: screenHeight * 0.015),
+                          ),
+                          label: const Text('Logout'),
+                        ),
+                      ),
+                      SizedBox(height: (screenHeight * 0.69) * 0.02),
+                      Text(
+                        'Version 1.01.321',
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(color: CustColors.grey,fontSize: drawerWidth * 0.05),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String title, String value) {
+    double screenWidth = MediaQuery.of(context).size.width * 0.8;
+    double screenHeight = MediaQuery.of(context).size.height * 0.69;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: CustColors.grey,
+              fontSize: screenWidth * 0.04,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: screenWidth * 0.035,
+              color: CustColors.black,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          Divider(
+            color: CustColors.grey.withOpacity(0.3),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
