@@ -1,18 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:school_teacher/initities/read_device_data.dart';
 import 'package:school_teacher/screens/dashboard.dart';
-import 'package:school_teacher/screens/navigation/home_screen.dart';
 import 'package:school_teacher/screens/splash/splash_screen.dart';
 import 'package:school_teacher/widgets/cust_circular_progress_indicator.dart';
-
 import '../../initities/colors.dart';
 import '../../initities/consts.dart';
 import '../../initities/handle_http_error.dart';
@@ -259,30 +254,36 @@ class _LoginScreenState extends State<LoginScreen> {
       var body = json.encode({
         'mobileNumber': mobileTxt,
         'password': passwordTxt,
-        // 'deviceId': Platform.isAndroid ? _deviceData['id']:_deviceData['identifierForVendor'],
+        // 'deviceId': 'QSR1.211112.011',
+        'deviceId': Platform.isAndroid ? _deviceData['id']:_deviceData['identifierForVendor'],
       });
-
       var response = await post(uri, body: body, headers: {
         'Content-Type': 'application/json',
       });
 
       var rawData = json.decode(response.body);
-      print(rawData);
       if (response.statusCode == 200) {
-        Pref.instance.setBool(Consts.isLogin, true);
-        Pref.instance.setString(
-            Consts.teacherToken, rawData['data']['user'][Consts.teacherToken]);
-        getUserDetailsFromAPI();
-        Pref.instance.setString(
-            Consts.organisationId, rawData['data']['user'][Consts.organisationId].toString());
-        Pref.instance.setString(
-            Consts.teacherCode, rawData['data']['user'][Consts.teacherCode]);
-        Pref.instance.setString(
-            Consts.organisationCode, rawData['data']['user'][Consts.organisationCode].toString());
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-              (route) => false,
-        );
+        bool status = (rawData['status']).toString().toLowerCase() == 'success' ? true:false;
+        if(status){
+          Pref.instance.setBool(Consts.isLogin, true);
+          Pref.instance.setString(
+              Consts.teacherToken, rawData['data']['user'][Consts.teacherToken]);
+          getUserDetailsFromAPI();
+          Pref.instance.setString(
+              Consts.organisationId, rawData['data']['user'][Consts.organisationId].toString());
+          Pref.instance.setString(
+              Consts.teacherCode, rawData['data']['user'][Consts.teacherCode]);
+          Pref.instance.setString(
+              Consts.organisationCode, rawData['data']['user'][Consts.organisationCode].toString());
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => DashboardScreen()),
+                (route) => false,
+          );
+        }else{
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(rawData['message'] ?? 'Unable to login'),
+          ));
+        }
       } else if (response.statusCode == 400) {
         var rawData = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

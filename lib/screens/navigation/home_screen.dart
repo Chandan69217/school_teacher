@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     var status = await getLocationPermission();
     if (status == LocationPermissionStatus.granted) {
-      var position = await Geolocator.getCurrentPosition();
+      var position = await Geolocator.getCurrentPosition(
+      locationSettings: Platform.isAndroid ? AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        forceLocationManager: true,
+      ) : Platform.isIOS ? AppleSettings(
+        allowBackgroundLocationUpdates: true,
+        activityType: ActivityType.otherNavigation,
+      ):LocationSettings(
+        accuracy: LocationAccuracy.high
+      )
+      );
       if (position.isMocked) {
         showDialog(
             dialogType: DialogType.warning,
@@ -68,7 +79,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Uri uri = Uri.https(Urls.baseUrls, Urls.staffAttendance);
           var body = json.encode({
             "latitude": position.latitude.toString(),
+            // "latitude": '24.960320',
             "longitude": position.longitude.toString(),
+            // "longitude": '84.004822',
             "attendanceTime": dateFormat1.format(DateTime.now()),
             "staffStatus": !_switchValue ? 'IN' : 'OUT'
           });
@@ -120,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _punchBtnLoading = false;
           });
-          print('User Token Not Available');
           return _handleError('Token Missing', 'Please log in again');
         }
       } catch (exception) {
@@ -256,21 +268,21 @@ class _HomeScreenState extends State<HomeScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size(screenWidth, screenHeight * 0.07),
-        child: AppBar(
-          title: Text('Dashboard',style: TextStyle(fontSize:  (screenHeight * 0.07) * 0.4),),
-          titleSpacing: 0,
-          backgroundColor: CustColors.dark_sky,
-          foregroundColor: CustColors.white,
-          leading: Builder(
-              builder: (context) => IconButton(
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
-                  icon: Icon(Icons.menu, color: CustColors.white,size: (screenHeight * 0.07) * 0.5,))),
-        ),
-      ),
+      // appBar: PreferredSize(
+      //   preferredSize: Size(screenWidth, screenHeight * 0.07),
+      //   child: AppBar(
+      //     title: Text('Dashboard',style: TextStyle(fontSize:  (screenHeight * 0.07) * 0.4),),
+      //     titleSpacing: 0,
+      //     backgroundColor: CustColors.dark_sky,
+      //     foregroundColor: CustColors.white,
+      //     leading: Builder(
+      //         builder: (context) => IconButton(
+      //             onPressed: () {
+      //               Scaffold.of(context).openDrawer();
+      //             },
+      //             icon: Icon(Icons.menu, color: CustColors.white,size: (screenHeight * 0.07) * 0.5,))),
+      //   ),
+      // ),
       backgroundColor: CustColors.background,
       body: FutureBuilder(future: _getUserDetailsFromCached(),
           builder:(context, snapshot){
@@ -343,48 +355,69 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: (screenHeight * 0.18) * 0.05),
-                                Text('Shift: ${Teacher.teacherType}',
-                                    style:
-                                    TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white)),
-                                Text('In: $inTime',
-                                    style:
-                                    TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white,height: 0)),
-                                Text('Out: $outTime',
-                                    style:
-                                    TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white,height: 0)),
-                              ],
+                            Flexible(
+                              fit: FlexFit.tight,
+                              flex: 4,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(height: (screenHeight * 0.18) * 0.05),
+                                  FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text('Shift: ${Teacher.teacherType}',
+                                        style:
+                                        TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white)),
+                                  ),
+                                  FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text('In: $inTime',
+                                        style:
+                                        TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white,height: 0)),
+                                  ),
+                                  FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: Text('Out: $outTime',
+                                        style:
+                                        TextStyle(fontSize: (screenHeight * 0.18) * 0.1, color: Colors.white,height: 0)),
+                                  ),
+                                ],
+                              ),
                             ),
-                            Spacer(),
+                            const SizedBox(width: 8.0,),
                             if (_punchBtnLoading)
-                              Expanded(
-                                  child: Center(
+                              Flexible(
+                                fit: FlexFit.loose,
+                                flex: 3,
+                                  child: Container(
+                                    padding: EdgeInsets.only(right: 8.0),
+                                    alignment: Alignment.bottomRight,
                                       child: CustCircularProgress(
                                         color: Colors.white,
                                         size: (screenHeight * 0.18) * 0.05,
                                       )))
                             else
-                              FlutterSwitch(
-                                width: screenWidth * 0.37,
-                                height: screenWidth * 0.1,
-                                borderRadius: 30.0,
-                                showOnOff: true,
-                                activeTextColor: CustColors.white,
-                                inactiveTextColor: CustColors.white,
-                                padding: (screenWidth * 0.37)*0.06,
-                                activeText: 'Out',
-                                inactiveText: 'In',
-                                inactiveColor: Colors.green,
-                                activeColor: Colors.red,
-                                activeTextFontWeight: FontWeight.normal,
-                                inactiveTextFontWeight: FontWeight.normal,
-                                valueFontSize: (screenWidth * 0.37)*0.12,
-                                activeIcon: Icon(Icons.arrow_back_rounded),
-                                inactiveIcon: Icon(Icons.arrow_forward_rounded),
-                                onToggle: _markAttendance, value: _switchValue,
+                              Flexible(
+                                fit: FlexFit.loose,
+                                flex: 3,
+                                child: FlutterSwitch(
+                                  width: screenWidth * 0.37,
+                                  height: screenWidth * 0.1,
+                                  borderRadius: 30.0,
+                                  showOnOff: true,
+                                  activeTextColor: CustColors.white,
+                                  inactiveTextColor: CustColors.white,
+                                  padding: (screenWidth * 0.37)*0.06,
+                                  activeText: 'Out',
+                                  inactiveText: 'In',
+                                  inactiveColor: Colors.green,
+                                  activeColor: Colors.red,
+                                  activeTextFontWeight: FontWeight.normal,
+                                  inactiveTextFontWeight: FontWeight.normal,
+                                  valueFontSize: (screenWidth * 0.37)*0.12,
+                                  activeIcon: Icon(Icons.arrow_back_rounded),
+                                  inactiveIcon: Icon(Icons.arrow_forward_rounded),
+                                  onToggle: _markAttendance, value: _switchValue,
+                                ),
                               ),
                           ],
                         ),
@@ -394,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(height: 10,),
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: screenWidth * 0.025, horizontal: screenWidth * 0.02),
-                    child: Text('Recent Activity',
+                    child:         Text('Recent Activity',
                         style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,
@@ -537,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return Center(child: CustCircularProgress());
             }
           }),
-      drawer: _drawerUI(),
+      // drawer: _drawerUI(),
     );
   }
 
@@ -646,11 +679,17 @@ class _HomeScreenState extends State<HomeScreen> {
         fontSize: screenWidth * 0.035,
       ),
       dialogType: dialogType,
-      btnOkOnPress: () {},
+      btnOkOnPress: dialogType == DialogType.success ? (){} : (){
+        _markAttendance(!_switchValue);
+      },
+      btnOkColor:  dialogType == DialogType.success ? Colors.green : Colors.red,
       dismissOnBackKeyPress: false,
+      btnCancelOnPress: dialogType == DialogType.warning? (){}:null,
+      btnCancelColor: Colors.grey,
       dismissOnTouchOutside: false,
       animType: AnimType.bottomSlide,
-      btnOkText: 'OK',
+
+      btnOkText: dialogType == DialogType.success ? 'OK' : 'Refresh location',
       dialogBorderRadius: BorderRadius.circular(10),
       dialogBackgroundColor: Colors.white,
       width: screenWidth,
